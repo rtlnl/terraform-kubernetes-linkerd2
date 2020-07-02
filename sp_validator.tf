@@ -1,4 +1,56 @@
+resource "kubernetes_cluster_role" "linkerd_sp_validator" {
+  metadata {
+    name = "linkerd-linkerd-sp-validator"
+    labels = {
+      "linkerd.io/control-plane-component" = "sp-validator",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  rule {
+    verbs      = ["list"]
+    api_groups = [""]
+    resources  = ["pods"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "linkerd_sp_validator" {
+  metadata {
+    name = "linkerd-linkerd-sp-validator"
+    labels = {
+      "linkerd.io/control-plane-component" = "sp-validator",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-sp-validator"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "linkerd-linkerd-sp-validator"
+  }
+}
+
+resource "kubernetes_service_account" "linkerd_sp_validator" {
+  metadata {
+    name      = "linkerd-sp-validator"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "sp-validator",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+}
+
 resource "kubernetes_service" "linkerd_sp_validator" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_sp_validator,
+    kubernetes_cluster_role_binding.linkerd_sp_validator,
+    kubernetes_service_account.linkerd_sp_validator
+  ]
+
   metadata {
     name      = "linkerd-sp-validator"
     namespace = "linkerd"
@@ -24,10 +76,22 @@ resource "kubernetes_service" "linkerd_sp_validator" {
 }
 
 resource "kubernetes_deployment" "linkerd_sp_validator" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_sp_validator,
+    kubernetes_cluster_role_binding.linkerd_sp_validator,
+    kubernetes_service_account.linkerd_sp_validator
+  ]
+
   metadata {
     name      = "linkerd-sp-validator"
     namespace = "linkerd"
-    labels    = { "app.kubernetes.io/name" = "sp-validator", "app.kubernetes.io/part-of" = "Linkerd", "app.kubernetes.io/version" = "stable-2.8.1", "linkerd.io/control-plane-component" = "sp-validator", "linkerd.io/control-plane-ns" = "linkerd" }
+    labels = {
+      "app.kubernetes.io/name"             = "sp-validator",
+      "app.kubernetes.io/part-of"          = "Linkerd",
+      "app.kubernetes.io/version"          = "stable-2.8.1",
+      "linkerd.io/control-plane-component" = "sp-validator",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
     annotations = {
       "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
     }

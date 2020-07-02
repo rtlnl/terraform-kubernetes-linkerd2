@@ -1,4 +1,56 @@
+resource "kubernetes_cluster_role" "linkerd_prometheus" {
+  metadata {
+    name = "linkerd-linkerd-prometheus"
+    labels = {
+      "linkerd.io/control-plane-component" = "prometheus",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  rule {
+    verbs      = ["get", "list", "watch"]
+    api_groups = [""]
+    resources  = ["nodes", "nodes/proxy", "pods"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "linkerd_prometheus" {
+  metadata {
+    name = "linkerd-linkerd-prometheus"
+    labels = {
+      "linkerd.io/control-plane-component" = "prometheus",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-prometheus"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "linkerd-linkerd-prometheus"
+  }
+}
+
+resource "kubernetes_service_account" "linkerd_prometheus" {
+  metadata {
+    name      = "linkerd-prometheus"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "prometheus",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+}
+
 resource "kubernetes_config_map" "linkerd_prometheus_config" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_prometheus,
+    kubernetes_cluster_role_binding.linkerd_prometheus,
+    kubernetes_service_account.linkerd_prometheus
+  ]
+
   metadata {
     name      = "linkerd-prometheus-config"
     namespace = "linkerd"
@@ -16,6 +68,13 @@ resource "kubernetes_config_map" "linkerd_prometheus_config" {
 }
 
 resource "kubernetes_service" "linkerd_prometheus" {
+  depends_on = [
+    kubernetes_config_map.linkerd_prometheus_config,
+    kubernetes_cluster_role.linkerd_prometheus,
+    kubernetes_cluster_role_binding.linkerd_prometheus,
+    kubernetes_service_account.linkerd_prometheus
+  ]
+
   metadata {
     name      = "linkerd-prometheus"
     namespace = "linkerd"
@@ -41,6 +100,13 @@ resource "kubernetes_service" "linkerd_prometheus" {
 }
 
 resource "kubernetes_deployment" "linkerd_prometheus" {
+  depends_on = [
+    kubernetes_config_map.linkerd_prometheus_config,
+    kubernetes_cluster_role.linkerd_prometheus,
+    kubernetes_cluster_role_binding.linkerd_prometheus,
+    kubernetes_service_account.linkerd_prometheus
+  ]
+
   metadata {
     name      = "linkerd-prometheus"
     namespace = "linkerd"

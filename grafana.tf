@@ -10,6 +10,9 @@ resource "kubernetes_service_account" "linkerd_grafana" {
 }
 
 resource "kubernetes_config_map" "linkerd_grafana_config" {
+
+  depends_on = [kubernetes_service_account.linkerd_grafana]
+
   metadata {
     name      = "linkerd-grafana-config"
     namespace = "linkerd"
@@ -29,6 +32,8 @@ resource "kubernetes_config_map" "linkerd_grafana_config" {
 }
 
 resource "kubernetes_service" "linkerd_grafana" {
+  depends_on = [kubernetes_config_map.linkerd_grafana_config]
+
   metadata {
     name      = "linkerd-grafana"
     namespace = "linkerd"
@@ -54,6 +59,8 @@ resource "kubernetes_service" "linkerd_grafana" {
 }
 
 resource "kubernetes_deployment" "linkerd_grafana" {
+  depends_on = [kubernetes_config_map.linkerd_grafana_config]
+
   metadata {
     name      = "linkerd-grafana"
     namespace = "linkerd"

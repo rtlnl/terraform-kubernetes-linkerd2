@@ -13,6 +13,8 @@ resource "kubernetes_namespace" "linkerd" {
 }
 
 resource "kubernetes_config_map" "linkerd_config" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name      = "linkerd-config"
     namespace = "linkerd"
@@ -32,6 +34,8 @@ resource "kubernetes_config_map" "linkerd_config" {
 }
 
 resource "kubernetes_config_map" "linkerd_config_addons" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name      = "linkerd-config-addons"
     namespace = "linkerd"

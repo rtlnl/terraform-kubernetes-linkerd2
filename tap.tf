@@ -1,4 +1,125 @@
+resource "kubernetes_cluster_role" "linkerd_linkerd_tap" {
+  metadata {
+    name = "linkerd-linkerd-tap"
+    labels = {
+      "linkerd.io/control-plane-component" = "tap",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = [""]
+    resources  = ["pods", "services", "replicationcontrollers", "namespaces", "nodes"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["extensions", "apps"]
+    resources  = ["daemonsets", "deployments", "replicasets", "statefulsets"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["extensions", "batch"]
+    resources  = ["cronjobs", "jobs"]
+  }
+}
+
+resource "kubernetes_cluster_role" "linkerd_linkerd_tap_admin" {
+  metadata {
+    name = "linkerd-linkerd-tap-admin"
+    labels = {
+      "linkerd.io/control-plane-component" = "tap",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  rule {
+    verbs      = ["watch"]
+    api_groups = ["tap.linkerd.io"]
+    resources  = ["*"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap" {
+  metadata {
+    name = "linkerd-linkerd-tap"
+    labels = {
+      "linkerd.io/control-plane-component" = "tap",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-tap"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "linkerd-linkerd-tap"
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap_auth_delegator" {
+  metadata {
+    name = "linkerd-linkerd-tap-auth-delegator"
+    labels = {
+      "linkerd.io/control-plane-component" = "tap",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-tap"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "system:auth-delegator"
+  }
+}
+
+resource "kubernetes_service_account" "linkerd_tap" {
+  metadata {
+    name      = "linkerd-tap"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "tap",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+}
+
+resource "kubernetes_role_binding" "linkerd_linkerd_tap_auth_reader" {
+  metadata {
+    name      = "linkerd-linkerd-tap-auth-reader"
+    namespace = "kube-system"
+    labels = {
+      "linkerd.io/control-plane-component" = "tap",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-tap"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = "extension-apiserver-authentication-reader"
+  }
+}
+
 resource "kubernetes_api_service" "v1alpha1_tap_linkerd_io" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_linkerd_tap,
+    kubernetes_cluster_role.linkerd_linkerd_tap_admin,
+    kubernetes_cluster_role_binding.linkerd_linkerd_tap,
+    kubernetes_cluster_role_binding.linkerd_linkerd_tap_auth_delegator,
+    kubernetes_service_account.linkerd_tap,
+    kubernetes_role_binding.linkerd_linkerd_tap_auth_reader
+  ]
+
   metadata {
     name = "v1alpha1.tap.linkerd.io"
     labels = {
@@ -20,6 +141,16 @@ resource "kubernetes_api_service" "v1alpha1_tap_linkerd_io" {
 }
 
 resource "kubernetes_service" "linkerd_tap" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_linkerd_tap,
+    kubernetes_cluster_role.linkerd_linkerd_tap_admin,
+    kubernetes_cluster_role_binding.linkerd_linkerd_tap,
+    kubernetes_cluster_role_binding.linkerd_linkerd_tap_auth_delegator,
+    kubernetes_service_account.linkerd_tap,
+    kubernetes_role_binding.linkerd_linkerd_tap_auth_reader,
+    kubernetes_api_service.v1alpha1_tap_linkerd_io
+  ]
+
   metadata {
     name      = "linkerd-tap"
     namespace = "linkerd"
@@ -50,6 +181,16 @@ resource "kubernetes_service" "linkerd_tap" {
 }
 
 resource "kubernetes_deployment" "linkerd_tap" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_linkerd_tap,
+    kubernetes_cluster_role.linkerd_linkerd_tap_admin,
+    kubernetes_cluster_role_binding.linkerd_linkerd_tap,
+    kubernetes_cluster_role_binding.linkerd_linkerd_tap_auth_delegator,
+    kubernetes_service_account.linkerd_tap,
+    kubernetes_role_binding.linkerd_linkerd_tap_auth_reader,
+    kubernetes_api_service.v1alpha1_tap_linkerd_io
+  ]
+
   metadata {
     name      = "linkerd-tap"
     namespace = "linkerd"

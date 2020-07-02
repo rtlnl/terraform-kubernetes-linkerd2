@@ -1,4 +1,157 @@
+resource "kubernetes_role" "linkerd_web" {
+  metadata {
+    name      = "linkerd-web"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "web",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  rule {
+    verbs          = ["get"]
+    api_groups     = [""]
+    resources      = ["configmaps"]
+    resource_names = ["linkerd-config"]
+  }
+  rule {
+    verbs      = ["get"]
+    api_groups = [""]
+    resources  = ["namespaces", "configmaps"]
+  }
+  rule {
+    verbs      = ["list"]
+    api_groups = [""]
+    resources  = ["serviceaccounts", "pods"]
+  }
+  rule {
+    verbs      = ["list"]
+    api_groups = ["apps"]
+    resources  = ["replicasets"]
+  }
+}
+
+resource "kubernetes_role_binding" "linkerd_web" {
+  metadata {
+    name      = "linkerd-web"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "web",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-web"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = "linkerd-web"
+  }
+}
+
+resource "kubernetes_cluster_role" "linkerd_web_check" {
+  metadata {
+    name = "linkerd-linkerd-web-check"
+    labels = {
+      "linkerd.io/control-plane-component" = "web",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  rule {
+    verbs      = ["list"]
+    api_groups = ["rbac.authorization.k8s.io"]
+    resources  = ["clusterroles", "clusterrolebindings"]
+  }
+  rule {
+    verbs      = ["list"]
+    api_groups = ["apiextensions.k8s.io"]
+    resources  = ["customresourcedefinitions"]
+  }
+  rule {
+    verbs      = ["list"]
+    api_groups = ["admissionregistration.k8s.io"]
+    resources  = ["mutatingwebhookconfigurations", "validatingwebhookconfigurations"]
+  }
+  rule {
+    verbs      = ["list"]
+    api_groups = ["policy"]
+    resources  = ["podsecuritypolicies"]
+  }
+  rule {
+    verbs      = ["list"]
+    api_groups = ["linkerd.io"]
+    resources  = ["serviceprofiles"]
+  }
+  rule {
+    verbs      = ["get"]
+    api_groups = ["apiregistration.k8s.io"]
+    resources  = ["apiservices"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "linkerd_web_check" {
+  metadata {
+    name = "linkerd-linkerd-web-check"
+    labels = {
+      "linkerd.io/control-plane-component" = "web",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-web"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "linkerd-linkerd-web-check"
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "linkerd_linkerd_web_admin" {
+  metadata {
+    name = "linkerd-linkerd-web-admin"
+    labels = {
+      "linkerd.io/control-plane-component" = "web",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-web"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "linkerd-linkerd-tap-admin"
+  }
+}
+
+resource "kubernetes_service_account" "linkerd_web" {
+  metadata {
+    name      = "linkerd-web"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "web",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+}
+
 resource "kubernetes_service" "linkerd_web" {
+  depends_on = [
+    kubernetes_role.linkerd_web,
+    kubernetes_role_binding.linkerd_web,
+    kubernetes_cluster_role.linkerd_web_check,
+    kubernetes_cluster_role_binding.linkerd_web_check,
+    kubernetes_cluster_role_binding.linkerd_linkerd_web_admin,
+    kubernetes_service_account.linkerd_web
+  ]
+
   metadata {
     name      = "linkerd-web"
     namespace = "linkerd"
@@ -29,6 +182,15 @@ resource "kubernetes_service" "linkerd_web" {
 }
 
 resource "kubernetes_deployment" "linkerd_web" {
+  depends_on = [
+    kubernetes_role.linkerd_web,
+    kubernetes_role_binding.linkerd_web,
+    kubernetes_cluster_role.linkerd_web_check,
+    kubernetes_cluster_role_binding.linkerd_web_check,
+    kubernetes_cluster_role_binding.linkerd_linkerd_web_admin,
+    kubernetes_service_account.linkerd_web
+  ]
+
   metadata {
     name      = "linkerd-web"
     namespace = "linkerd"

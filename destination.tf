@@ -1,4 +1,76 @@
+resource "kubernetes_cluster_role" "linkerd_destination" {
+  metadata {
+    name = "linkerd-linkerd-destination"
+    labels = {
+      "linkerd.io/control-plane-component" = "destination",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["apps"]
+    resources  = ["replicasets"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["batch"]
+    resources  = ["jobs"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = [""]
+    resources  = ["pods", "endpoints", "services"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["linkerd.io"]
+    resources  = ["serviceprofiles"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["split.smi-spec.io"]
+    resources  = ["trafficsplits"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "linkerd_destination" {
+  metadata {
+    name = "linkerd-linkerd-destination"
+    labels = {
+      "linkerd.io/control-plane-component" = "destination",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-destination"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "linkerd-linkerd-destination"
+  }
+}
+
+resource "kubernetes_service_account" "linkerd_destination" {
+  metadata {
+    name      = "linkerd-destination"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "destination",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+}
+
 resource "kubernetes_service" "linkerd_dst" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_destination,
+    kubernetes_cluster_role_binding.linkerd_destination,
+    kubernetes_service_account.linkerd_destination
+  ]
+
   metadata {
     name      = "linkerd-dst"
     namespace = "linkerd"
@@ -24,6 +96,12 @@ resource "kubernetes_service" "linkerd_dst" {
 }
 
 resource "kubernetes_deployment" "linkerd_destination" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_destination,
+    kubernetes_cluster_role_binding.linkerd_destination,
+    kubernetes_service_account.linkerd_destination
+  ]
+
   metadata {
     name      = "linkerd-destination"
     namespace = "linkerd"
@@ -110,7 +188,13 @@ resource "kubernetes_deployment" "linkerd_destination" {
         container {
           name  = "destination"
           image = "gcr.io/linkerd-io/controller:stable-2.8.1"
-          args  = ["destination", "-addr=:8086", "-controller-namespace=linkerd", "-enable-h2-upgrade=true", "-log-level=info"]
+          args = [
+            "destination",
+            "-addr=:8086",
+            "-controller-namespace=linkerd",
+            "-enable-h2-upgrade=true",
+            "-log-level=info"
+          ]
           port {
             name           = "grpc"
             container_port = 8086

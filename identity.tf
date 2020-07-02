@@ -1,4 +1,66 @@
+resource "kubernetes_cluster_role" "linkerd_identity" {
+  metadata {
+    name = "linkerd-linkerd-identity"
+    labels = {
+      "linkerd.io/control-plane-component" = "identity",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  rule {
+    verbs      = ["create"]
+    api_groups = ["authentication.k8s.io"]
+    resources  = ["tokenreviews"]
+  }
+  rule {
+    verbs      = ["get"]
+    api_groups = ["apps"]
+    resources  = ["deployments"]
+  }
+  rule {
+    verbs      = ["create", "patch"]
+    api_groups = [""]
+    resources  = ["events"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "linkerd_identity" {
+  metadata {
+    name = "linkerd-linkerd-identity"
+    labels = {
+      "linkerd.io/control-plane-component" = "identity",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-identity"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "linkerd-linkerd-identity"
+  }
+}
+
+resource "kubernetes_service_account" "linkerd_identity" {
+  metadata {
+    name      = "linkerd-identity"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "identity",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+}
+
 resource "kubernetes_service" "linkerd_identity" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_identity,
+    kubernetes_cluster_role_binding.linkerd_identity,
+    kubernetes_service_account.linkerd_identity
+  ]
+
   metadata {
     name      = "linkerd-identity"
     namespace = "linkerd"
@@ -24,6 +86,13 @@ resource "kubernetes_service" "linkerd_identity" {
 }
 
 resource "kubernetes_deployment" "linkerd_identity" {
+
+  depends_on = [
+    kubernetes_cluster_role.linkerd_identity,
+    kubernetes_cluster_role_binding.linkerd_identity,
+    kubernetes_service_account.linkerd_identity
+  ]
+
   metadata {
     name      = "linkerd-identity"
     namespace = "linkerd"

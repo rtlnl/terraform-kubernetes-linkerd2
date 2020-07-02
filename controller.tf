@@ -1,29 +1,159 @@
-resource "kubernetes_service" "linkerd_controller_api" {
+resource "kubernetes_role" "linkerd_psp" {
   metadata {
-    name      = "linkerd-controller-api"
+    name      = "linkerd-psp"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-ns" = "linkerd"
+    }
+  }
+  rule {
+    verbs          = ["use"]
+    api_groups     = ["policy", "extensions"]
+    resources      = ["podsecuritypolicies"]
+    resource_names = ["linkerd-linkerd-control-plane"]
+  }
+}
+
+resource "kubernetes_role_binding" "linkerd_psp" {
+  metadata {
+    name      = "linkerd-psp"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-ns" = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-controller"
+    namespace = "linkerd"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-destination"
+    namespace = "linkerd"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-grafana"
+    namespace = "linkerd"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-heartbeat"
+    namespace = "linkerd"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-identity"
+    namespace = "linkerd"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-prometheus"
+    namespace = "linkerd"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-proxy-injector"
+    namespace = "linkerd"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-sp-validator"
+    namespace = "linkerd"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-tap"
+    namespace = "linkerd"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-web"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = "linkerd-psp"
+  }
+}
+
+resource "kubernetes_cluster_role" "linkerd_controller" {
+  metadata {
+    name = "linkerd-linkerd-controller"
+    labels = {
+      "linkerd.io/control-plane-component" = "controller",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["extensions", "apps"]
+    resources  = ["daemonsets", "deployments", "replicasets", "statefulsets"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["extensions", "batch"]
+    resources  = ["cronjobs", "jobs"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = [""]
+    resources  = ["pods", "endpoints", "services", "replicationcontrollers", "namespaces"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["linkerd.io"]
+    resources  = ["serviceprofiles"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["split.smi-spec.io"]
+    resources  = ["trafficsplits"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "linkerd_controller" {
+  metadata {
+    name = "linkerd-linkerd-controller"
+    labels = {
+      "linkerd.io/control-plane-component" = "controller",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-controller"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "linkerd-linkerd-controller"
+  }
+}
+
+resource "kubernetes_service_account" "linkerd_controller" {
+  metadata {
+    name      = "linkerd-controller"
     namespace = "linkerd"
     labels = {
       "linkerd.io/control-plane-component" = "controller",
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
-  }
-  spec {
-    type = "ClusterIP"
-    port {
-      name        = "http"
-      port        = 8085
-      target_port = "8085"
-    }
-    selector = {
-      "linkerd.io/control-plane-component" = "controller"
-    }
   }
 }
 
 resource "kubernetes_deployment" "linkerd_controller" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_controller,
+    kubernetes_cluster_role_binding.linkerd_controller,
+    kubernetes_service_account.linkerd_controller,
+    kubernetes_role.linkerd_psp,
+    kubernetes_role_binding.linkerd_psp
+  ]
+
   metadata {
     name      = "linkerd-controller"
     namespace = "linkerd"
@@ -342,6 +472,39 @@ resource "kubernetes_deployment" "linkerd_controller" {
       rolling_update {
         max_unavailable = "1"
       }
+    }
+  }
+}
+
+resource "kubernetes_service" "linkerd_controller_api" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_controller,
+    kubernetes_cluster_role_binding.linkerd_controller,
+    kubernetes_service_account.linkerd_controller,
+    kubernetes_role.linkerd_psp,
+    kubernetes_role_binding.linkerd_psp
+  ]
+
+  metadata {
+    name      = "linkerd-controller-api"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "controller",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+    annotations = {
+      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
+    }
+  }
+  spec {
+    type = "ClusterIP"
+    port {
+      name        = "http"
+      port        = 8085
+      target_port = "8085"
+    }
+    selector = {
+      "linkerd.io/control-plane-component" = "controller"
     }
   }
 }

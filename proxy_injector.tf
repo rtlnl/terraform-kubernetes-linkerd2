@@ -1,4 +1,107 @@
+resource "kubernetes_cluster_role" "linkerd_proxy_injector" {
+  metadata {
+    name = "linkerd-linkerd-proxy-injector"
+    labels = {
+      "linkerd.io/control-plane-component" = "proxy-injector",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  rule {
+    verbs      = ["create", "patch"]
+    api_groups = [""]
+    resources  = ["events"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = [""]
+    resources  = ["namespaces", "replicationcontrollers"]
+  }
+  rule {
+    verbs      = ["list", "watch"]
+    api_groups = [""]
+    resources  = ["pods"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["extensions", "apps"]
+    resources  = ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  }
+  rule {
+    verbs      = ["list", "get", "watch"]
+    api_groups = ["extensions", "batch"]
+    resources  = ["cronjobs", "jobs"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "linkerd_proxy_injector" {
+  metadata {
+    name = "linkerd-linkerd-proxy-injector"
+    labels = {
+      "linkerd.io/control-plane-component" = "proxy-injector",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-proxy-injector"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "linkerd-linkerd-proxy-injector"
+  }
+}
+
+resource "kubernetes_service_account" "linkerd_proxy_injector" {
+  metadata {
+    name      = "linkerd-proxy-injector"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "proxy-injector",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+}
+
+resource "kubernetes_service" "linkerd_proxy_injector" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_proxy_injector,
+    kubernetes_cluster_role_binding.linkerd_proxy_injector,
+    kubernetes_service_account.linkerd_proxy_injector
+  ]
+
+  metadata {
+    name      = "linkerd-proxy-injector"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "proxy-injector",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+    annotations = {
+      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
+    }
+  }
+  spec {
+    type = "ClusterIP"
+    port {
+      name        = "proxy-injector"
+      port        = 443
+      target_port = "proxy-injector"
+    }
+    selector = {
+      "linkerd.io/control-plane-component" = "proxy-injector"
+    }
+  }
+}
+
 resource "kubernetes_deployment" "linkerd_proxy_injector" {
+  depends_on = [
+    kubernetes_cluster_role.linkerd_proxy_injector,
+    kubernetes_cluster_role_binding.linkerd_proxy_injector,
+    kubernetes_service_account.linkerd_proxy_injector
+  ]
+
   metadata {
     name      = "linkerd-proxy-injector"
     namespace = "linkerd"
@@ -320,31 +423,6 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
       rolling_update {
         max_unavailable = "1"
       }
-    }
-  }
-}
-
-resource "kubernetes_service" "linkerd_proxy_injector" {
-  metadata {
-    name      = "linkerd-proxy-injector"
-    namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "proxy-injector",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
-  }
-  spec {
-    type = "ClusterIP"
-    port {
-      name        = "proxy-injector"
-      port        = 443
-      target_port = "proxy-injector"
-    }
-    selector = {
-      "linkerd.io/control-plane-component" = "proxy-injector"
     }
   }
 }

@@ -1,4 +1,57 @@
+resource "kubernetes_role" "linkerd_heartbeat" {
+  metadata {
+    name      = "linkerd-heartbeat"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-ns" = "linkerd"
+    }
+  }
+  rule {
+    verbs          = ["get"]
+    api_groups     = [""]
+    resources      = ["configmaps"]
+    resource_names = ["linkerd-config"]
+  }
+}
+
+resource "kubernetes_role_binding" "linkerd_heartbeat" {
+  metadata {
+    name      = "linkerd-heartbeat"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-ns" = "linkerd"
+    }
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "linkerd-heartbeat"
+    namespace = "linkerd"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = "linkerd-heartbeat"
+  }
+}
+
+resource "kubernetes_service_account" "linkerd_heartbeat" {
+  metadata {
+    name      = "linkerd-heartbeat"
+    namespace = "linkerd"
+    labels = {
+      "linkerd.io/control-plane-component" = "heartbeat",
+      "linkerd.io/control-plane-ns"        = "linkerd"
+    }
+  }
+}
+
 resource "kubernetes_cron_job" "linkerd_heartbeat" {
+  depends_on = [
+    kubernetes_role.linkerd_heartbeat,
+    kubernetes_role_binding.linkerd_heartbeat,
+    kubernetes_service_account.linkerd_heartbeat
+  ]
+
   metadata {
     name      = "linkerd-heartbeat"
     namespace = "linkerd"
