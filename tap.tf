@@ -158,9 +158,7 @@ resource "kubernetes_service" "linkerd_tap" {
       "linkerd.io/control-plane-component" = "tap",
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
+    annotations = local.common_linkerd_annotations
   }
   spec {
     type = "ClusterIP"
@@ -201,9 +199,7 @@ resource "kubernetes_deployment" "linkerd_tap" {
       "linkerd.io/control-plane-component" = "tap",
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
+    annotations = local.common_linkerd_annotations
   }
   spec {
     replicas = 3

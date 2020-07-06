@@ -22,9 +22,7 @@ resource "kubernetes_config_map" "linkerd_config" {
       "linkerd.io/control-plane-component" = "controller",
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
+    annotations = local.common_linkerd_annotations
   }
   data = {
     global  = "${file("${path.module}/configs/global")}"
@@ -42,9 +40,7 @@ resource "kubernetes_config_map" "linkerd_config_addons" {
     labels = {
       "linkerd.io/control-plane-ns" = "linkerd"
     }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
+    annotations = local.common_linkerd_annotations
   }
   data = {
     values = "${file("${path.module}/configs/addon_values")}"

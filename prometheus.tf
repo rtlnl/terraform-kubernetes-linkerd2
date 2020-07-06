@@ -58,9 +58,7 @@ resource "kubernetes_config_map" "linkerd_prometheus_config" {
       "linkerd.io/control-plane-component" = "prometheus",
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
+    annotations = local.common_linkerd_annotations
   }
   data = {
     "prometheus.yml" = "${file("${path.module}/prometheus/config.yaml")}"
@@ -82,9 +80,7 @@ resource "kubernetes_service" "linkerd_prometheus" {
       "linkerd.io/control-plane-component" = "prometheus",
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
+    annotations = local.common_linkerd_annotations
   }
   spec {
     type = "ClusterIP"
@@ -117,9 +113,7 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
       "linkerd.io/control-plane-component" = "prometheus",
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
+    annotations = local.common_linkerd_annotations
   }
   spec {
     replicas = 1

@@ -62,9 +62,7 @@ resource "kubernetes_cron_job" "linkerd_heartbeat" {
       "linkerd.io/control-plane-component" = "heartbeat",
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
+    annotations = local.common_linkerd_annotations
   }
   spec {
     schedule = "16 8 * * * "
@@ -78,9 +76,7 @@ resource "kubernetes_cron_job" "linkerd_heartbeat" {
               "linkerd.io/control-plane-component" = "heartbeat",
               "linkerd.io/workload-ns"             = "linkerd"
             }
-            annotations = {
-              "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-            }
+            annotations = local.common_linkerd_annotations
           }
           spec {
             container {
