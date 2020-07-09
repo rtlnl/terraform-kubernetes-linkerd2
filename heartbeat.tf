@@ -43,6 +43,8 @@ resource "kubernetes_service_account" "linkerd_heartbeat" {
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
   }
+
+  automount_service_account_token = var.automount_service_account_token
 }
 
 resource "kubernetes_cron_job" "linkerd_heartbeat" {

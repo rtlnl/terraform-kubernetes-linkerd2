@@ -2,10 +2,8 @@ resource "kubernetes_role" "linkerd_psp" {
   metadata {
     name      = "linkerd-psp"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-ns" = "linkerd"
+    labels = local.common_linkerd_labels
     }
-  }
   rule {
     verbs          = ["use"]
     api_groups     = ["policy", "extensions"]
@@ -143,6 +141,8 @@ resource "kubernetes_service_account" "linkerd_controller" {
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
   }
+
+  automount_service_account_token = var.automount_service_account_token
 }
 
 resource "kubernetes_deployment" "linkerd_controller" {
@@ -359,7 +359,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = "${file("${path.module}/certs/proxy_trust_anchor.cert")}"
+            value = file("${path.module}/certs/proxy_trust_anchor.cert")
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"

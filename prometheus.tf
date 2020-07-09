@@ -42,6 +42,8 @@ resource "kubernetes_service_account" "linkerd_prometheus" {
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
   }
+
+  automount_service_account_token = var.automount_service_account_token
 }
 
 resource "kubernetes_config_map" "linkerd_prometheus_config" {
@@ -61,7 +63,7 @@ resource "kubernetes_config_map" "linkerd_prometheus_config" {
     annotations = local.common_linkerd_annotations
   }
   data = {
-    "prometheus.yml" = "${file("${path.module}/prometheus/config.yaml")}"
+    "prometheus.yml" = file("${path.module}/prometheus/config.yaml")
   }
 }
 
@@ -313,7 +315,7 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = "${file("${path.module}/certs/proxy_trust_anchor.cert")}"
+            value = file("${path.module}/certs/proxy_trust_anchor.cert")
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"

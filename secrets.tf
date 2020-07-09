@@ -10,8 +10,8 @@ resource "kubernetes_secret" "linkerd_proxy_injector_tls" {
   }
   type = "Opaque"
   data = {
-    "crt.pem" = "${file("${path.module}/certs/proxy_injector_crt.pem")}",
-    "key.pem" = "${file("${path.module}/certs/proxy_injector_key.pem")}"
+    "crt.pem" = file("${path.module}/certs/proxy_injector_crt.pem"),
+    "key.pem" = file("${path.module}/certs/proxy_injector_key.pem")
   }
 }
 
@@ -27,8 +27,8 @@ resource "kubernetes_secret" "linkerd_sp_validator_tls" {
   }
   type = "Opaque"
   data = {
-    "crt.pem" = "${file("${path.module}/certs/sp_validator_crt.pem")}",
-    "key.pem" = "${file("${path.module}/certs/sp_validator_key.pem")}"
+    "crt.pem" = file("${path.module}/certs/sp_validator_crt.pem"),
+    "key.pem" = file("${path.module}/certs/sp_validator_key.pem")
   }
 }
 
@@ -44,8 +44,8 @@ resource "kubernetes_secret" "linkerd_tap_tls" {
   }
   type = "Opaque"
   data = {
-    "crt.pem" = "${file("${path.module}/certs/tap_crt.pem")}",
-    "key.pem" = "${file("${path.module}/certs/tap_key.pem")}"
+    "crt.pem" = file("${path.module}/certs/tap_crt.pem"),
+    "key.pem" = file("${path.module}/certs/tap_key.pem")
   }
 }
 
@@ -63,7 +63,7 @@ resource "kubernetes_secret" "linkerd_identity_issuer" {
     }
   }
   data = {
-    "crt.pem" = "${file("${path.module}/certs/identity_issuer_crt.pem")}",
-    "key.pem" = "${file("${path.module}/certs/identity_issuer_key.pem")}"
+    "crt.pem" = file("${path.module}/certs/identity_issuer_crt.pem"),
+    "key.pem" = file("${path.module}/certs/identity_issuer_key.pem")
   }
 }

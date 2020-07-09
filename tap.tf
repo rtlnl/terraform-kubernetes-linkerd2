@@ -87,6 +87,8 @@ resource "kubernetes_service_account" "linkerd_tap" {
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
   }
+
+  automount_service_account_token = var.automount_service_account_token
 }
 
 resource "kubernetes_role_binding" "linkerd_linkerd_tap_auth_reader" {
@@ -134,7 +136,7 @@ resource "kubernetes_api_service" "v1alpha1_tap_linkerd_io" {
     }
     group                  = "tap.linkerd.io"
     version                = "v1alpha1"
-    ca_bundle              = "${file("${path.module}/certs/ca_bundle")}"
+    ca_bundle              = file("${path.module}/certs/ca_bundle")
     group_priority_minimum = 1000
     version_priority       = 100
   }
@@ -403,7 +405,7 @@ resource "kubernetes_deployment" "linkerd_tap" {
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = "${file("${path.module}/certs/proxy_trust_anchor.cert")}"
+            value = file("${path.module}/certs/proxy_trust_anchor.cert")
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"
