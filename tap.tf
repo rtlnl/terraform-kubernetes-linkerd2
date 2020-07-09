@@ -87,8 +87,6 @@ resource "kubernetes_service_account" "linkerd_tap" {
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
   }
-
-  automount_service_account_token = var.automount_service_account_token
 }
 
 resource "kubernetes_role_binding" "linkerd_linkerd_tap_auth_reader" {
@@ -204,7 +202,7 @@ resource "kubernetes_deployment" "linkerd_tap" {
     annotations = local.common_linkerd_annotations
   }
   spec {
-    replicas = 3
+    replicas = 1
     selector {
       match_labels = {
         "linkerd.io/control-plane-component" = "tap",
@@ -245,6 +243,7 @@ resource "kubernetes_deployment" "linkerd_tap" {
             secret_name = "linkerd-tap-tls"
           }
         }
+        automount_service_account_token = var.automount_service_account_token
         init_container {
           name  = "linkerd-init"
           image = "gcr.io/linkerd-io/proxy-init:v1.3.3"
@@ -405,7 +404,7 @@ resource "kubernetes_deployment" "linkerd_tap" {
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = file("${path.module}/certs/proxy_trust_anchor.cert")
+            value = file("${path.module}/certs/proxy_trust_anchor.pem")
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"
@@ -483,33 +482,33 @@ resource "kubernetes_deployment" "linkerd_tap" {
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
         service_account_name = "linkerd-tap"
-        affinity {
-          pod_anti_affinity {
-            required_during_scheduling_ignored_during_execution {
-              label_selector {
-                match_expressions {
-                  key      = "linkerd.io/control-plane-component"
-                  operator = "In"
-                  values   = ["tap"]
-                }
-              }
-              topology_key = "kubernetes.io/hostname"
-            }
-            preferred_during_scheduling_ignored_during_execution {
-              weight = 100
-              pod_affinity_term {
-                label_selector {
-                  match_expressions {
-                    key      = "linkerd.io/control-plane-component"
-                    operator = "In"
-                    values   = ["tap"]
-                  }
-                }
-                topology_key = "failure-domain.beta.kubernetes.io/zone"
-              }
-            }
-          }
-        }
+        # affinity {
+        #   pod_anti_affinity {
+        #     required_during_scheduling_ignored_during_execution {
+        #       label_selector {
+        #         match_expressions {
+        #           key      = "linkerd.io/control-plane-component"
+        #           operator = "In"
+        #           values   = ["tap"]
+        #         }
+        #       }
+        #       topology_key = "kubernetes.io/hostname"
+        #     }
+        #     preferred_during_scheduling_ignored_during_execution {
+        #       weight = 100
+        #       pod_affinity_term {
+        #         label_selector {
+        #           match_expressions {
+        #             key      = "linkerd.io/control-plane-component"
+        #             operator = "In"
+        #             values   = ["tap"]
+        #           }
+        #         }
+        #         topology_key = "failure-domain.beta.kubernetes.io/zone"
+        #       }
+        #     }
+        #   }
+        # }
       }
     }
     strategy {
