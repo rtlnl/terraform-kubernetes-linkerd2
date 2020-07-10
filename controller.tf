@@ -3,7 +3,7 @@ resource "kubernetes_role" "linkerd_psp" {
     name      = "linkerd-psp"
     namespace = "linkerd"
     labels = local.common_linkerd_labels
-    }
+  }
   rule {
     verbs          = ["use"]
     api_groups     = ["policy", "extensions"]
@@ -437,21 +437,12 @@ resource "kubernetes_deployment" "linkerd_controller" {
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
         service_account_name = "linkerd-controller"
-        affinity {
-          pod_anti_affinity {
-            required_during_scheduling_ignored_during_execution {
-              label_selector {
-                match_expressions {
-                  key      = "linkerd.io/control-plane-component"
-                  operator = "In"
-                  values   = ["controller"]
-                }
-              }
-              topology_key = "kubernetes.io/hostname"
-            }
-            preferred_during_scheduling_ignored_during_execution {
-              weight = 100
-              pod_affinity_term {
+        dynamic "affinity" {
+          for_each = var.high_availability == true ? [1] : []
+
+          content {
+            pod_anti_affinity {
+              required_during_scheduling_ignored_during_execution {
                 label_selector {
                   match_expressions {
                     key      = "linkerd.io/control-plane-component"
@@ -459,7 +450,20 @@ resource "kubernetes_deployment" "linkerd_controller" {
                     values   = ["controller"]
                   }
                 }
-                topology_key = "failure-domain.beta.kubernetes.io/zone"
+                topology_key = "kubernetes.io/hostname"
+              }
+              preferred_during_scheduling_ignored_during_execution {
+                weight = 100
+                pod_affinity_term {
+                  label_selector {
+                    match_expressions {
+                      key      = "linkerd.io/control-plane-component"
+                      operator = "In"
+                      values   = ["controller"]
+                    }
+                  }
+                  topology_key = "failure-domain.beta.kubernetes.io/zone"
+                }
               }
             }
           }

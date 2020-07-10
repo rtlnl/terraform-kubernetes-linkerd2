@@ -483,30 +483,34 @@ resource "kubernetes_deployment" "linkerd_tap" {
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
         service_account_name = "linkerd-tap"
-        affinity {
-          pod_anti_affinity {
-            required_during_scheduling_ignored_during_execution {
-              label_selector {
-                match_expressions {
-                  key      = "linkerd.io/control-plane-component"
-                  operator = "In"
-                  values   = ["tap"]
+        dynamic "affinity" {
+          for_each = var.high_availability == true ? [1] : []
+
+          content {
+            pod_anti_affinity {
+                required_during_scheduling_ignored_during_execution {
+                    label_selector {
+                    match_expressions {
+                        key      = "linkerd.io/control-plane-component"
+                        operator = "In"
+                        values   = ["tap"]
+                    }
+                    }
+                    topology_key = "kubernetes.io/hostname"
                 }
-              }
-              topology_key = "kubernetes.io/hostname"
-            }
-            preferred_during_scheduling_ignored_during_execution {
-              weight = 100
-              pod_affinity_term {
-                label_selector {
-                  match_expressions {
-                    key      = "linkerd.io/control-plane-component"
-                    operator = "In"
-                    values   = ["tap"]
-                  }
+                preferred_during_scheduling_ignored_during_execution {
+                    weight = 100
+                    pod_affinity_term {
+                    label_selector {
+                        match_expressions {
+                        key      = "linkerd.io/control-plane-component"
+                        operator = "In"
+                        values   = ["tap"]
+                        }
+                    }
+                    topology_key = "failure-domain.beta.kubernetes.io/zone"
+                    }
                 }
-                topology_key = "failure-domain.beta.kubernetes.io/zone"
-              }
             }
           }
         }
