@@ -141,8 +141,6 @@ resource "kubernetes_service_account" "linkerd_controller" {
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
   }
-
-  automount_service_account_token = var.automount_service_account_token
 }
 
 resource "kubernetes_deployment" "linkerd_controller" {
@@ -167,7 +165,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
     annotations = local.common_linkerd_annotations
   }
   spec {
-    replicas = 3
+    replicas = 1
     selector {
       match_labels = {
         "linkerd.io/control-plane-component" = "controller",
@@ -202,6 +200,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
             medium = "Memory"
           }
         }
+        automount_service_account_token = var.automount_service_account_token
         init_container {
           name  = "linkerd-init"
           image = "gcr.io/linkerd-io/proxy-init:v1.3.3"
@@ -359,7 +358,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = file("${path.module}/certs/proxy_trust_anchor.cert")
+            value = file("${path.module}/certs/proxy_trust_anchor.pem")
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"
