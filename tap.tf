@@ -472,7 +472,7 @@ resource "kubernetes_deployment" "linkerd_tap" {
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
         service_account_name = "linkerd-tap"
         dynamic "affinity" {
-          for_each = var.high_availability == true ? [1] : []
+          for_each = var.high_availability == true ? [map("ha", true)] : []
 
           content {
             pod_anti_affinity {
