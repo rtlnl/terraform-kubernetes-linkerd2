@@ -2,10 +2,9 @@ resource "kubernetes_service_account" "linkerd_grafana" {
   metadata {
     name      = "linkerd-grafana"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "grafana",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "grafana"
+    })
   }
 }
 
@@ -16,10 +15,9 @@ resource "kubernetes_config_map" "linkerd_grafana_config" {
   metadata {
     name      = "linkerd-grafana-config"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "grafana",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "grafana"
+    })
     annotations = local.common_linkerd_annotations
   }
   data = {
@@ -35,10 +33,9 @@ resource "kubernetes_service" "linkerd_grafana" {
   metadata {
     name      = "linkerd-grafana"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "grafana",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "grafana"
+    })
     annotations = local.common_linkerd_annotations
   }
   spec {
@@ -60,32 +57,29 @@ resource "kubernetes_deployment" "linkerd_grafana" {
   metadata {
     name      = "linkerd-grafana"
     namespace = "linkerd"
-    labels = {
+    labels = merge(local.common_linkerd_labels, {
       "app.kubernetes.io/name"             = "grafana",
       "app.kubernetes.io/part-of"          = "Linkerd",
       "app.kubernetes.io/version"          = "stable-2.8.1",
-      "linkerd.io/control-plane-component" = "grafana",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+      "linkerd.io/control-plane-component" = "grafana"
+    })
     annotations = local.common_linkerd_annotations
   }
   spec {
     replicas = 1
     selector {
-      match_labels = {
+      match_labels = merge(local.common_linkerd_labels, {
         "linkerd.io/control-plane-component" = "grafana",
-        "linkerd.io/control-plane-ns"        = "linkerd",
         "linkerd.io/proxy-deployment"        = "linkerd-grafana"
-      }
+      })
     }
     template {
       metadata {
-        labels = {
+        labels = merge(local.common_linkerd_labels, {
           "linkerd.io/control-plane-component" = "grafana",
-          "linkerd.io/control-plane-ns"        = "linkerd",
           "linkerd.io/proxy-deployment"        = "linkerd-grafana",
           "linkerd.io/workload-ns"             = "linkerd"
-        }
+        })
         annotations = {
           "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
           "linkerd.io/identity-mode" = "default",

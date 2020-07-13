@@ -1,10 +1,9 @@
 resource "kubernetes_cluster_role" "linkerd_sp_validator" {
   metadata {
     name = "linkerd-linkerd-sp-validator"
-    labels = {
-      "linkerd.io/control-plane-component" = "sp-validator",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "sp-validator"
+    })
   }
   rule {
     verbs      = ["list"]
@@ -16,10 +15,9 @@ resource "kubernetes_cluster_role" "linkerd_sp_validator" {
 resource "kubernetes_cluster_role_binding" "linkerd_sp_validator" {
   metadata {
     name = "linkerd-linkerd-sp-validator"
-    labels = {
-      "linkerd.io/control-plane-component" = "sp-validator",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "sp-validator"
+    })
   }
   subject {
     kind      = "ServiceAccount"
@@ -37,10 +35,9 @@ resource "kubernetes_service_account" "linkerd_sp_validator" {
   metadata {
     name      = "linkerd-sp-validator"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "sp-validator",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "sp-validator"
+    })
   }
 }
 
@@ -54,10 +51,9 @@ resource "kubernetes_service" "linkerd_sp_validator" {
   metadata {
     name      = "linkerd-sp-validator"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "sp-validator",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "sp-validator"
+    })
     annotations = local.common_linkerd_annotations
   }
   spec {
@@ -83,13 +79,12 @@ resource "kubernetes_deployment" "linkerd_sp_validator" {
   metadata {
     name      = "linkerd-sp-validator"
     namespace = "linkerd"
-    labels = {
+    labels = merge(local.common_linkerd_labels, {
       "app.kubernetes.io/name"             = "sp-validator",
       "app.kubernetes.io/part-of"          = "Linkerd",
       "app.kubernetes.io/version"          = "stable-2.8.1",
-      "linkerd.io/control-plane-component" = "sp-validator",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+      "linkerd.io/control-plane-component" = "sp-validator"
+    })
     annotations = local.common_linkerd_annotations
   }
   spec {
@@ -101,12 +96,11 @@ resource "kubernetes_deployment" "linkerd_sp_validator" {
     }
     template {
       metadata {
-        labels = {
+        labels = merge(local.common_linkerd_labels, {
           "linkerd.io/control-plane-component" = "sp-validator",
-          "linkerd.io/control-plane-ns"        = "linkerd",
           "linkerd.io/proxy-deployment"        = "linkerd-sp-validator",
           "linkerd.io/workload-ns"             = "linkerd"
-        }
+        })
         annotations = {
           "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
           "linkerd.io/identity-mode" = "default",

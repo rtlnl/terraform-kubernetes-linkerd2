@@ -1,10 +1,9 @@
 resource "kubernetes_cluster_role" "linkerd_proxy_injector" {
   metadata {
     name = "linkerd-linkerd-proxy-injector"
-    labels = {
-      "linkerd.io/control-plane-component" = "proxy-injector",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "proxy-injector"
+    })
   }
   rule {
     verbs      = ["create", "patch"]
@@ -36,10 +35,9 @@ resource "kubernetes_cluster_role" "linkerd_proxy_injector" {
 resource "kubernetes_cluster_role_binding" "linkerd_proxy_injector" {
   metadata {
     name = "linkerd-linkerd-proxy-injector"
-    labels = {
-      "linkerd.io/control-plane-component" = "proxy-injector",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "proxy-injector"
+    })
   }
   subject {
     kind      = "ServiceAccount"
@@ -57,10 +55,9 @@ resource "kubernetes_service_account" "linkerd_proxy_injector" {
   metadata {
     name      = "linkerd-proxy-injector"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "proxy-injector",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "proxy-injector"
+    })
   }
 }
 
@@ -74,10 +71,9 @@ resource "kubernetes_service" "linkerd_proxy_injector" {
   metadata {
     name      = "linkerd-proxy-injector"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "proxy-injector",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "proxy-injector"
+    })
     annotations = local.common_linkerd_annotations
   }
   spec {
@@ -103,13 +99,12 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
   metadata {
     name      = "linkerd-proxy-injector"
     namespace = "linkerd"
-    labels = {
+    labels = merge(local.common_linkerd_labels, {
       "app.kubernetes.io/name"             = "proxy-injector",
       "app.kubernetes.io/part-of"          = "Linkerd",
       "app.kubernetes.io/version"          = "stable-2.8.1",
-      "linkerd.io/control-plane-component" = "proxy-injector",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+      "linkerd.io/control-plane-component" = "proxy-injector"
+    })
     annotations = local.common_linkerd_annotations
   }
   spec {
@@ -121,12 +116,11 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
     }
     template {
       metadata {
-        labels = {
+        labels = merge(local.common_linkerd_labels, {
           "linkerd.io/control-plane-component" = "proxy-injector",
-          "linkerd.io/control-plane-ns"        = "linkerd",
           "linkerd.io/proxy-deployment"        = "linkerd-proxy-injector",
           "linkerd.io/workload-ns"             = "linkerd"
-        }
+        })
         annotations = {
           "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
           "linkerd.io/identity-mode" = "default",

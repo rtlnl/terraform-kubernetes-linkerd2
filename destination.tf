@@ -1,10 +1,9 @@
 resource "kubernetes_cluster_role" "linkerd_destination" {
   metadata {
     name = "linkerd-linkerd-destination"
-    labels = {
-      "linkerd.io/control-plane-component" = "destination",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "destination"
+    })
   }
   rule {
     verbs      = ["list", "get", "watch"]
@@ -36,10 +35,9 @@ resource "kubernetes_cluster_role" "linkerd_destination" {
 resource "kubernetes_cluster_role_binding" "linkerd_destination" {
   metadata {
     name = "linkerd-linkerd-destination"
-    labels = {
-      "linkerd.io/control-plane-component" = "destination",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "destination"
+    })
   }
   subject {
     kind      = "ServiceAccount"
@@ -57,10 +55,9 @@ resource "kubernetes_service_account" "linkerd_destination" {
   metadata {
     name      = "linkerd-destination"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "destination",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "destination"
+    })
   }
 }
 
@@ -74,10 +71,9 @@ resource "kubernetes_service" "linkerd_dst" {
   metadata {
     name      = "linkerd-dst"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "destination",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "destination"
+    })
     annotations = local.common_linkerd_annotations
   }
   spec {
@@ -103,32 +99,29 @@ resource "kubernetes_deployment" "linkerd_destination" {
   metadata {
     name      = "linkerd-destination"
     namespace = "linkerd"
-    labels = {
+    labels = merge(local.common_linkerd_labels, {
       "app.kubernetes.io/name"             = "destination",
       "app.kubernetes.io/part-of"          = "Linkerd",
       "app.kubernetes.io/version"          = "stable-2.8.1",
-      "linkerd.io/control-plane-component" = "destination",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+      "linkerd.io/control-plane-component" = "destination"
+    })
     annotations = local.common_linkerd_annotations
   }
   spec {
     replicas = 1
     selector {
-      match_labels = {
+      match_labels = merge(local.common_linkerd_labels, {
         "linkerd.io/control-plane-component" = "destination",
-        "linkerd.io/control-plane-ns"        = "linkerd",
         "linkerd.io/proxy-deployment"        = "linkerd-destination"
-      }
+      })
     }
     template {
       metadata {
-        labels = {
+        labels = merge(local.common_linkerd_labels, {
           "linkerd.io/control-plane-component" = "destination",
-          "linkerd.io/control-plane-ns"        = "linkerd",
           "linkerd.io/proxy-deployment"        = "linkerd-destination",
           "linkerd.io/workload-ns"             = "linkerd"
-        }
+        })
         annotations = {
           "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
           "linkerd.io/identity-mode" = "default",

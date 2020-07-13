@@ -1,10 +1,9 @@
 resource "kubernetes_cluster_role" "linkerd_linkerd_tap" {
   metadata {
     name = "linkerd-linkerd-tap"
-    labels = {
-      "linkerd.io/control-plane-component" = "tap",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "tap"
+    })
   }
   rule {
     verbs      = ["list", "get", "watch"]
@@ -26,10 +25,9 @@ resource "kubernetes_cluster_role" "linkerd_linkerd_tap" {
 resource "kubernetes_cluster_role" "linkerd_linkerd_tap_admin" {
   metadata {
     name = "linkerd-linkerd-tap-admin"
-    labels = {
-      "linkerd.io/control-plane-component" = "tap",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "tap"
+    })
   }
   rule {
     verbs      = ["watch"]
@@ -41,10 +39,9 @@ resource "kubernetes_cluster_role" "linkerd_linkerd_tap_admin" {
 resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap" {
   metadata {
     name = "linkerd-linkerd-tap"
-    labels = {
-      "linkerd.io/control-plane-component" = "tap",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "tap"
+    })
   }
   subject {
     kind      = "ServiceAccount"
@@ -61,10 +58,9 @@ resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap" {
 resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap_auth_delegator" {
   metadata {
     name = "linkerd-linkerd-tap-auth-delegator"
-    labels = {
-      "linkerd.io/control-plane-component" = "tap",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "tap"
+    })
   }
   subject {
     kind      = "ServiceAccount"
@@ -82,10 +78,9 @@ resource "kubernetes_service_account" "linkerd_tap" {
   metadata {
     name      = "linkerd-tap"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "tap",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "tap"
+    })
   }
 }
 
@@ -93,10 +88,9 @@ resource "kubernetes_role_binding" "linkerd_linkerd_tap_auth_reader" {
   metadata {
     name      = "linkerd-linkerd-tap-auth-reader"
     namespace = "kube-system"
-    labels = {
-      "linkerd.io/control-plane-component" = "tap",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "tap"
+    })
   }
   subject {
     kind      = "ServiceAccount"
@@ -122,10 +116,9 @@ resource "kubernetes_api_service" "v1alpha1_tap_linkerd_io" {
 
   metadata {
     name = "v1alpha1.tap.linkerd.io"
-    labels = {
-      "linkerd.io/control-plane-component" = "tap",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "tap"
+    })
   }
   spec {
     service {
@@ -154,10 +147,9 @@ resource "kubernetes_service" "linkerd_tap" {
   metadata {
     name      = "linkerd-tap"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "tap",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.common_linkerd_labels, {
+      "linkerd.io/control-plane-component" = "tap"
+    })
     annotations = local.common_linkerd_annotations
   }
   spec {
@@ -192,32 +184,29 @@ resource "kubernetes_deployment" "linkerd_tap" {
   metadata {
     name      = "linkerd-tap"
     namespace = "linkerd"
-    labels = {
+    labels = merge(local.common_linkerd_labels, {
       "app.kubernetes.io/name"             = "tap",
       "app.kubernetes.io/part-of"          = "Linkerd",
       "app.kubernetes.io/version"          = "stable-2.8.1",
-      "linkerd.io/control-plane-component" = "tap",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+      "linkerd.io/control-plane-component" = "tap"
+    })
     annotations = local.common_linkerd_annotations
   }
   spec {
     replicas = 1
     selector {
-      match_labels = {
+      match_labels = merge(local.common_linkerd_labels, {
         "linkerd.io/control-plane-component" = "tap",
-        "linkerd.io/control-plane-ns"        = "linkerd",
         "linkerd.io/proxy-deployment"        = "linkerd-tap"
-      }
+      })
     }
     template {
       metadata {
-        labels = {
+        labels = merge(local.common_linkerd_labels, {
           "linkerd.io/control-plane-component" = "tap",
-          "linkerd.io/control-plane-ns"        = "linkerd",
           "linkerd.io/proxy-deployment"        = "linkerd-tap",
           "linkerd.io/workload-ns"             = "linkerd"
-        }
+        })
         annotations = {
           "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
           "linkerd.io/identity-mode" = "default",
