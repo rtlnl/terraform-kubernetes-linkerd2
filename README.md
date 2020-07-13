@@ -57,6 +57,9 @@ linkerd uninstall | kubectl delete -f -
 
 ## Plan
 
+### High Availability Mode
+There is a boolean variable `high_availability` that needs to be set, to switch on high availability in the cluster, this controls when to apply various pod/node affinities defined in the linkerd deployments.
+
 ## Apply
 
 ## Observability
