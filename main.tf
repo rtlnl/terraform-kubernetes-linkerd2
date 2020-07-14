@@ -18,7 +18,7 @@ resource "kubernetes_config_map" "linkerd_config" {
     name      = "linkerd-config"
     namespace = local.linkerd_namespace
     labels = {
-      "linkerd.io/control-plane-component" = "controller",
+      "linkerd.io/control-plane-component" = local.linkerd_component_controller_name,
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
     annotations = local.linkerd_annotation_created_by

@@ -2,7 +2,7 @@ resource "kubernetes_cluster_role" "linkerd_sp_validator" {
   metadata {
     name = "linkerd-linkerd-sp-validator"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "sp-validator"
+      "linkerd.io/control-plane-component" = local.linkerd_component_sp_validator_name
     })
   }
   rule {
@@ -16,12 +16,12 @@ resource "kubernetes_cluster_role_binding" "linkerd_sp_validator" {
   metadata {
     name = "linkerd-linkerd-sp-validator"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "sp-validator"
+      "linkerd.io/control-plane-component" = local.linkerd_component_sp_validator_name
     })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-sp-validator"
+    name      = local.linkerd_sp_validator_name
     namespace = local.linkerd_namespace
   }
   role_ref {
@@ -33,10 +33,10 @@ resource "kubernetes_cluster_role_binding" "linkerd_sp_validator" {
 
 resource "kubernetes_service_account" "linkerd_sp_validator" {
   metadata {
-    name      = "linkerd-sp-validator"
+    name      = local.linkerd_sp_validator_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "sp-validator"
+      "linkerd.io/control-plane-component" = local.linkerd_component_sp_validator_name
     })
   }
 }
@@ -49,22 +49,22 @@ resource "kubernetes_service" "linkerd_sp_validator" {
   ]
 
   metadata {
-    name      = "linkerd-sp-validator"
+    name      = local.linkerd_sp_validator_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "sp-validator"
+      "linkerd.io/control-plane-component" = local.linkerd_component_sp_validator_name
     })
     annotations = local.linkerd_annotation_created_by
   }
   spec {
     type = "ClusterIP"
     port {
-      name        = "sp-validator"
+      name        = local.linkerd_component_sp_validator_name
       port        = 443
-      target_port = "sp-validator"
+      target_port = local.linkerd_component_sp_validator_name
     }
     selector = {
-      "linkerd.io/control-plane-component" = "sp-validator"
+      "linkerd.io/control-plane-component" = local.linkerd_component_sp_validator_name
     }
   }
 }
@@ -77,14 +77,14 @@ resource "kubernetes_deployment" "linkerd_sp_validator" {
   ]
 
   metadata {
-    name      = "linkerd-sp-validator"
+    name      = local.linkerd_sp_validator_name
     namespace = local.linkerd_namespace
     labels    = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
       {
-        "app.kubernetes.io/name"             = "sp-validator",
-        "linkerd.io/control-plane-component" = "sp-validator"
+        "app.kubernetes.io/name"             = local.linkerd_component_sp_validator_name,
+        "linkerd.io/control-plane-component" = local.linkerd_component_sp_validator_name
       }
     )
     annotations = local.linkerd_annotation_created_by
@@ -93,7 +93,7 @@ resource "kubernetes_deployment" "linkerd_sp_validator" {
     replicas = 1
     selector {
       match_labels = {
-        "linkerd.io/control-plane-component" = "sp-validator"
+        "linkerd.io/control-plane-component" = local.linkerd_component_sp_validator_name
       }
     }
     template {
@@ -102,8 +102,8 @@ resource "kubernetes_deployment" "linkerd_sp_validator" {
           local.linkerd_label_control_plane_ns,
           local.linkerd_label_workload_ns,
           {
-            "linkerd.io/control-plane-component" = "sp-validator",
-            "linkerd.io/proxy-deployment"        = "linkerd-sp-validator"
+            "linkerd.io/control-plane-component" = local.linkerd_component_sp_validator_name,
+            "linkerd.io/proxy-deployment"        = local.linkerd_sp_validator_name
           }
         )
         annotations = local.linkerd_annotations_for_deployment
@@ -156,11 +156,11 @@ resource "kubernetes_deployment" "linkerd_sp_validator" {
           }
         }
         container {
-          name  = "sp-validator"
+          name  = local.linkerd_component_sp_validator_name
           image =  local.linkerd_deployment_controller_image
-          args  = ["sp-validator", "-log-level=info"]
+          args  = [local.linkerd_component_sp_validator_name, "-log-level=info"]
           port {
-            name           = "sp-validator"
+            name           = local.linkerd_component_sp_validator_name
             container_port = 8443
           }
           port {
@@ -351,7 +351,7 @@ resource "kubernetes_deployment" "linkerd_sp_validator" {
           }
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
-        service_account_name = "linkerd-sp-validator"
+        service_account_name = local.linkerd_sp_validator_name
         dynamic "affinity" {
           for_each = var.high_availability == true ? [map("ha", true)] : []
 
@@ -362,7 +362,7 @@ resource "kubernetes_deployment" "linkerd_sp_validator" {
                     match_expressions {
                         key      = "linkerd.io/control-plane-component"
                         operator = "In"
-                        values   = ["sp-validator"]
+                        values   = [local.linkerd_component_sp_validator_name]
                     }
                     }
                     topology_key = "kubernetes.io/hostname"
@@ -374,7 +374,7 @@ resource "kubernetes_deployment" "linkerd_sp_validator" {
                         match_expressions {
                         key      = "linkerd.io/control-plane-component"
                         operator = "In"
-                        values   = ["sp-validator"]
+                        values   = [local.linkerd_component_sp_validator_name]
                         }
                     }
                     topology_key = "failure-domain.beta.kubernetes.io/zone"

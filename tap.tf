@@ -2,7 +2,7 @@ resource "kubernetes_cluster_role" "linkerd_linkerd_tap" {
   metadata {
     name = "linkerd-linkerd-tap"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "tap"
+      "linkerd.io/control-plane-component" = local.linkerd_component_tap_name
     })
   }
   rule {
@@ -26,7 +26,7 @@ resource "kubernetes_cluster_role" "linkerd_linkerd_tap_admin" {
   metadata {
     name = "linkerd-linkerd-tap-admin"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "tap"
+      "linkerd.io/control-plane-component" = local.linkerd_component_tap_name
     })
   }
   rule {
@@ -40,12 +40,12 @@ resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap" {
   metadata {
     name = "linkerd-linkerd-tap"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "tap"
+      "linkerd.io/control-plane-component" = local.linkerd_component_tap_name
     })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-tap"
+    name      = local.linkerd_tap_name
     namespace = local.linkerd_namespace
   }
   role_ref {
@@ -59,12 +59,12 @@ resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap_auth_delegator" 
   metadata {
     name = "linkerd-linkerd-tap-auth-delegator"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "tap"
+      "linkerd.io/control-plane-component" = local.linkerd_component_tap_name
     })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-tap"
+    name      = local.linkerd_tap_name
     namespace = local.linkerd_namespace
   }
   role_ref {
@@ -76,10 +76,10 @@ resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap_auth_delegator" 
 
 resource "kubernetes_service_account" "linkerd_tap" {
   metadata {
-    name      = "linkerd-tap"
+    name      = local.linkerd_tap_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "tap"
+      "linkerd.io/control-plane-component" = local.linkerd_component_tap_name
     })
   }
 }
@@ -89,12 +89,12 @@ resource "kubernetes_role_binding" "linkerd_linkerd_tap_auth_reader" {
     name      = "linkerd-linkerd-tap-auth-reader"
     namespace = "kube-system"
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "tap"
+      "linkerd.io/control-plane-component" = local.linkerd_component_tap_name
     })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-tap"
+    name      = local.linkerd_tap_name
     namespace = local.linkerd_namespace
   }
   role_ref {
@@ -117,13 +117,13 @@ resource "kubernetes_api_service" "v1alpha1_tap_linkerd_io" {
   metadata {
     name = "v1alpha1.tap.linkerd.io"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "tap"
+      "linkerd.io/control-plane-component" = local.linkerd_component_tap_name
     })
   }
   spec {
     service {
       namespace = local.linkerd_namespace
-      name      = "linkerd-tap"
+      name      = local.linkerd_tap_name
     }
     group                  = "tap.linkerd.io"
     version                = "v1alpha1"
@@ -145,10 +145,10 @@ resource "kubernetes_service" "linkerd_tap" {
   ]
 
   metadata {
-    name      = "linkerd-tap"
+    name      = local.linkerd_tap_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "tap"
+      "linkerd.io/control-plane-component" = local.linkerd_component_tap_name
     })
     annotations = local.linkerd_annotation_created_by
   }
@@ -165,7 +165,7 @@ resource "kubernetes_service" "linkerd_tap" {
       target_port = "apiserver"
     }
     selector = {
-      "linkerd.io/control-plane-component" = "tap"
+      "linkerd.io/control-plane-component" = local.linkerd_component_tap_name
     }
   }
 }
@@ -182,14 +182,14 @@ resource "kubernetes_deployment" "linkerd_tap" {
   ]
 
   metadata {
-    name      = "linkerd-tap"
+    name      = local.linkerd_tap_name
     namespace = local.linkerd_namespace
     labels    = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
       {
-        "app.kubernetes.io/name"             = "tap",
-        "linkerd.io/control-plane-component" = "tap"
+        "app.kubernetes.io/name"             = local.linkerd_component_tap_name,
+        "linkerd.io/control-plane-component" = local.linkerd_component_tap_name
       }
     )
     annotations = local.linkerd_annotation_created_by
@@ -198,8 +198,8 @@ resource "kubernetes_deployment" "linkerd_tap" {
     replicas = 1
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
-        "linkerd.io/control-plane-component" = "tap",
-        "linkerd.io/proxy-deployment"        = "linkerd-tap"
+        "linkerd.io/control-plane-component" = local.linkerd_component_tap_name,
+        "linkerd.io/proxy-deployment"        = local.linkerd_tap_name
       })
     }
     template {
@@ -208,8 +208,8 @@ resource "kubernetes_deployment" "linkerd_tap" {
           local.linkerd_label_control_plane_ns,
           local.linkerd_label_workload_ns,
           {
-            "linkerd.io/control-plane-component" = "tap",
-            "linkerd.io/proxy-deployment"        = "linkerd-tap"
+            "linkerd.io/control-plane-component" = local.linkerd_component_tap_name,
+            "linkerd.io/proxy-deployment"        = local.linkerd_tap_name
           }
         )
         annotations = local.linkerd_annotations_for_deployment
@@ -268,9 +268,9 @@ resource "kubernetes_deployment" "linkerd_tap" {
           }
         }
         container {
-          name  = "tap"
+          name  = local.linkerd_component_tap_name
           image =  local.linkerd_deployment_controller_image
-          args  = ["tap", "-controller-namespace=linkerd", "-log-level=info"]
+          args  = [local.linkerd_component_tap_name, "-controller-namespace=linkerd", "-log-level=info"]
           port {
             name           = "grpc"
             container_port = 8088
@@ -471,7 +471,7 @@ resource "kubernetes_deployment" "linkerd_tap" {
           }
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
-        service_account_name = "linkerd-tap"
+        service_account_name = local.linkerd_tap_name
         dynamic "affinity" {
           for_each = var.high_availability == true ? [map("ha", true)] : []
 
@@ -482,7 +482,7 @@ resource "kubernetes_deployment" "linkerd_tap" {
                     match_expressions {
                         key      = "linkerd.io/control-plane-component"
                         operator = "In"
-                        values   = ["tap"]
+                        values   = [local.linkerd_component_tap_name]
                     }
                     }
                     topology_key = "kubernetes.io/hostname"
@@ -494,7 +494,7 @@ resource "kubernetes_deployment" "linkerd_tap" {
                         match_expressions {
                         key      = "linkerd.io/control-plane-component"
                         operator = "In"
-                        values   = ["tap"]
+                        values   = [local.linkerd_component_tap_name]
                         }
                     }
                     topology_key = "failure-domain.beta.kubernetes.io/zone"

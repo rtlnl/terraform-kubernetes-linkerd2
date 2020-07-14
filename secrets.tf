@@ -1,31 +1,31 @@
-# resource "tls_private_key" "linkerd_trust_anchor" {
-#   algorithm   = "ECDSA"
-#   ecdsa_curve = "P384"
-# }
+resource "tls_private_key" "linkerd_trust_anchor" {
+  algorithm   = "ECDSA"
+  ecdsa_curve = "P384"
+}
 
-# resource "tls_self_signed_cert" "linkerd_trust_anchor" {
-#   subject {
-#     common_name = "identity.linkerd.cluster.local"
-#   }
+resource "tls_self_signed_cert" "linkerd_trust_anchor" {
+  subject {
+    common_name = "identity.linkerd.cluster.local"
+  }
 
-#   // 5 years
-#   validity_period_hours = 43800
-#   key_algorithm         = tls_private_key.linkerd_trust_anchor.algorithm
-#   is_ca_certificate     = true
-#   allowed_uses          = [
-#     "cert_signing",
-#     "crl_signing",
-#   ]
+  // 5 years
+  validity_period_hours = 43800
+  key_algorithm         = tls_private_key.linkerd_trust_anchor.algorithm
+  is_ca_certificate     = true
+  allowed_uses          = [
+    "cert_signing",
+    "crl_signing",
+  ]
 
-#   private_key_pem = tls_private_key.linkerd_trust_anchor.private_key_pem
-# }
+  private_key_pem = tls_private_key.linkerd_trust_anchor.private_key_pem
+}
 
 resource "kubernetes_secret" "linkerd_proxy_injector_tls" {
   metadata {
     name      = "linkerd-proxy-injector-tls"
     namespace = local.linkerd_namespace
     labels = {
-      "linkerd.io/control-plane-component" = "proxy-injector",
+      "linkerd.io/control-plane-component" = local.linkerd_component_proxy_injector_name,
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
     annotations = local.linkerd_annotation_created_by
@@ -42,7 +42,7 @@ resource "kubernetes_secret" "linkerd_sp_validator_tls" {
     name      = "linkerd-sp-validator-tls"
     namespace = local.linkerd_namespace
     labels = {
-      "linkerd.io/control-plane-component" = "sp-validator",
+      "linkerd.io/control-plane-component" = local.linkerd_component_sp_validator_name,
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
     annotations = local.linkerd_annotation_created_by
@@ -59,7 +59,7 @@ resource "kubernetes_secret" "linkerd_tap_tls" {
     name      = "linkerd-tap-tls"
     namespace = local.linkerd_namespace
     labels = {
-      "linkerd.io/control-plane-component" = "tap",
+      "linkerd.io/control-plane-component" = local.linkerd_component_tap_name,
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
     annotations = local.linkerd_annotation_created_by
@@ -76,7 +76,7 @@ resource "kubernetes_secret" "linkerd_identity_issuer" {
     name      = "linkerd-identity-issuer"
     namespace = local.linkerd_namespace
     labels = {
-      "linkerd.io/control-plane-component" = "identity",
+      "linkerd.io/control-plane-component" = local.linkerd_component_identity_name,
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
     annotations = {

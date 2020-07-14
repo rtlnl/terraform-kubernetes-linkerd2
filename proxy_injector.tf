@@ -2,7 +2,7 @@ resource "kubernetes_cluster_role" "linkerd_proxy_injector" {
   metadata {
     name = "linkerd-linkerd-proxy-injector"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "proxy-injector"
+      "linkerd.io/control-plane-component" = local.linkerd_component_proxy_injector_name
     })
   }
   rule {
@@ -36,12 +36,12 @@ resource "kubernetes_cluster_role_binding" "linkerd_proxy_injector" {
   metadata {
     name = "linkerd-linkerd-proxy-injector"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "proxy-injector"
+      "linkerd.io/control-plane-component" = local.linkerd_component_proxy_injector_name
     })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-proxy-injector"
+    name      = local.linkerd_proxy_injector_name
     namespace = local.linkerd_namespace
   }
   role_ref {
@@ -53,10 +53,10 @@ resource "kubernetes_cluster_role_binding" "linkerd_proxy_injector" {
 
 resource "kubernetes_service_account" "linkerd_proxy_injector" {
   metadata {
-    name      = "linkerd-proxy-injector"
+    name      = local.linkerd_proxy_injector_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "proxy-injector"
+      "linkerd.io/control-plane-component" = local.linkerd_component_proxy_injector_name
     })
   }
 }
@@ -69,22 +69,22 @@ resource "kubernetes_service" "linkerd_proxy_injector" {
   ]
 
   metadata {
-    name      = "linkerd-proxy-injector"
+    name      = local.linkerd_proxy_injector_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "proxy-injector"
+      "linkerd.io/control-plane-component" = local.linkerd_component_proxy_injector_name
     })
     annotations = local.linkerd_annotation_created_by
   }
   spec {
     type = "ClusterIP"
     port {
-      name        = "proxy-injector"
+      name        = local.linkerd_component_proxy_injector_name
       port        = 443
-      target_port = "proxy-injector"
+      target_port = local.linkerd_component_proxy_injector_name
     }
     selector = {
-      "linkerd.io/control-plane-component" = "proxy-injector"
+      "linkerd.io/control-plane-component" = local.linkerd_component_proxy_injector_name
     }
   }
 }
@@ -97,14 +97,14 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
   ]
 
   metadata {
-    name      = "linkerd-proxy-injector"
+    name      = local.linkerd_proxy_injector_name
     namespace = local.linkerd_namespace
     labels    = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
       {
-        "app.kubernetes.io/name"             = "proxy-injector",
-        "linkerd.io/control-plane-component" = "proxy-injector"
+        "app.kubernetes.io/name"             = local.linkerd_component_proxy_injector_name,
+        "linkerd.io/control-plane-component" = local.linkerd_component_proxy_injector_name
       }
     )
     annotations = local.linkerd_annotation_created_by
@@ -113,7 +113,7 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
     replicas = 1
     selector {
       match_labels = {
-        "linkerd.io/control-plane-component" = "proxy-injector"
+        "linkerd.io/control-plane-component" = local.linkerd_component_proxy_injector_name
       }
     }
     template {
@@ -122,8 +122,8 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
           local.linkerd_label_control_plane_ns,
           local.linkerd_label_workload_ns,
           {
-            "linkerd.io/control-plane-component" = "proxy-injector",
-            "linkerd.io/proxy-deployment"        = "linkerd-proxy-injector"
+            "linkerd.io/control-plane-component" = local.linkerd_component_proxy_injector_name,
+            "linkerd.io/proxy-deployment"        = local.linkerd_proxy_injector_name
           }
         )
         annotations = local.linkerd_annotations_for_deployment
@@ -182,11 +182,11 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
           }
         }
         container {
-          name  = "proxy-injector"
+          name  = local.linkerd_component_proxy_injector_name
           image =  local.linkerd_deployment_controller_image
-          args  = ["proxy-injector", "-log-level=info"]
+          args  = [local.linkerd_component_proxy_injector_name, "-log-level=info"]
           port {
-            name           = "proxy-injector"
+            name           = local.linkerd_component_proxy_injector_name
             container_port = 8443
           }
           port {
@@ -381,7 +381,7 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
           }
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
-        service_account_name = "linkerd-proxy-injector"
+        service_account_name = local.linkerd_proxy_injector_name
         dynamic "affinity" {
           for_each = var.high_availability == true ? [map("ha", true)] : []
 
@@ -392,7 +392,7 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
                   match_expressions {
                     key      = "linkerd.io/control-plane-component"
                     operator = "In"
-                    values   = ["proxy-injector"]
+                    values   = [local.linkerd_component_proxy_injector_name]
                   }
                 }
                 topology_key = "kubernetes.io/hostname"
@@ -404,7 +404,7 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
                     match_expressions {
                       key      = "linkerd.io/control-plane-component"
                       operator = "In"
-                      values   = ["proxy-injector"]
+                      values   = [local.linkerd_component_proxy_injector_name]
                     }
                   }
                   topology_key = "failure-domain.beta.kubernetes.io/zone"

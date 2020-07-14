@@ -2,7 +2,7 @@ resource "kubernetes_cluster_role" "linkerd_identity" {
   metadata {
     name = "linkerd-linkerd-identity"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "identity"
+      "linkerd.io/control-plane-component" = local.linkerd_component_identity_name
     })
   }
   rule {
@@ -26,12 +26,12 @@ resource "kubernetes_cluster_role_binding" "linkerd_identity" {
   metadata {
     name = "linkerd-linkerd-identity"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "identity"
+      "linkerd.io/control-plane-component" = local.linkerd_component_identity_name
     })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-identity"
+    name      = local.linkerd_identity_name
     namespace = local.linkerd_namespace
   }
   role_ref {
@@ -43,10 +43,10 @@ resource "kubernetes_cluster_role_binding" "linkerd_identity" {
 
 resource "kubernetes_service_account" "linkerd_identity" {
   metadata {
-    name      = "linkerd-identity"
+    name      = local.linkerd_identity_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "identity"
+      "linkerd.io/control-plane-component" = local.linkerd_component_identity_name
     })
   }
 }
@@ -59,10 +59,10 @@ resource "kubernetes_service" "linkerd_identity" {
   ]
 
   metadata {
-    name      = "linkerd-identity"
+    name      = local.linkerd_identity_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "identity"
+      "linkerd.io/control-plane-component" = local.linkerd_component_identity_name
     })
     annotations = local.linkerd_annotation_created_by
   }
@@ -74,7 +74,7 @@ resource "kubernetes_service" "linkerd_identity" {
       target_port = "8080"
     }
     selector = {
-      "linkerd.io/control-plane-component" = "identity"
+      "linkerd.io/control-plane-component" = local.linkerd_component_identity_name
     }
   }
 }
@@ -88,14 +88,14 @@ resource "kubernetes_deployment" "linkerd_identity" {
   ]
 
   metadata {
-    name      = "linkerd-identity"
+    name      = local.linkerd_identity_name
     namespace = local.linkerd_namespace
     labels = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
       {
-        "app.kubernetes.io/name"             = "identity",
-        "linkerd.io/control-plane-component" = "identity"
+        "app.kubernetes.io/name"             = local.linkerd_component_identity_name,
+        "linkerd.io/control-plane-component" = local.linkerd_component_identity_name
       }
     )
     annotations = local.linkerd_annotation_created_by
@@ -104,8 +104,8 @@ resource "kubernetes_deployment" "linkerd_identity" {
     replicas = 1
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
-        "linkerd.io/control-plane-component" = "identity",
-        "linkerd.io/proxy-deployment"        = "linkerd-identity"
+        "linkerd.io/control-plane-component" = local.linkerd_component_identity_name,
+        "linkerd.io/proxy-deployment"        = local.linkerd_identity_name
       })
     }
     template {
@@ -114,8 +114,8 @@ resource "kubernetes_deployment" "linkerd_identity" {
           local.linkerd_label_control_plane_ns,
           local.linkerd_label_workload_ns,
           {
-            "linkerd.io/control-plane-component" = "identity",
-            "linkerd.io/proxy-deployment"        = "linkerd-identity"
+            "linkerd.io/control-plane-component" = local.linkerd_component_identity_name,
+            "linkerd.io/proxy-deployment"        = local.linkerd_identity_name
           }
         )
         annotations = local.linkerd_annotations_for_deployment
@@ -174,9 +174,9 @@ resource "kubernetes_deployment" "linkerd_identity" {
           }
         }
         container {
-          name  = "identity"
+          name  = local.linkerd_component_identity_name
           image =  local.linkerd_deployment_controller_image
-          args  = ["identity", "-log-level=info"]
+          args  = [local.linkerd_component_identity_name, "-log-level=info"]
           port {
             name           = "grpc"
             container_port = 8080
@@ -372,7 +372,7 @@ resource "kubernetes_deployment" "linkerd_identity" {
           }
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
-        service_account_name = "linkerd-identity"
+        service_account_name = local.linkerd_identity_name
         dynamic "affinity" {
           for_each = var.high_availability == true ? [map("ha", true)] : []
 
@@ -383,7 +383,7 @@ resource "kubernetes_deployment" "linkerd_identity" {
                     match_expressions {
                         key      = "linkerd.io/control-plane-component"
                         operator = "In"
-                        values   = ["identity"]
+                        values   = [local.linkerd_component_identity_name]
                     }
                     }
                     topology_key = "kubernetes.io/hostname"
@@ -395,7 +395,7 @@ resource "kubernetes_deployment" "linkerd_identity" {
                         match_expressions {
                         key      = "linkerd.io/control-plane-component"
                         operator = "In"
-                        values   = ["identity"]
+                        values   = [local.linkerd_component_identity_name]
                         }
                     }
                     topology_key = "failure-domain.beta.kubernetes.io/zone"

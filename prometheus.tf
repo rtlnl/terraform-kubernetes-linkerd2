@@ -2,7 +2,7 @@ resource "kubernetes_cluster_role" "linkerd_prometheus" {
   metadata {
     name = "linkerd-linkerd-prometheus"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "prometheus"
+      "linkerd.io/control-plane-component" = local.linkerd_component_prometheus_name
     })
   }
   rule {
@@ -16,12 +16,12 @@ resource "kubernetes_cluster_role_binding" "linkerd_prometheus" {
   metadata {
     name = "linkerd-linkerd-prometheus"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "prometheus"
+      "linkerd.io/control-plane-component" = local.linkerd_component_prometheus_name
     })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-prometheus"
+    name      = local.linkerd_prometheus_name
     namespace = local.linkerd_namespace
   }
   role_ref {
@@ -33,10 +33,10 @@ resource "kubernetes_cluster_role_binding" "linkerd_prometheus" {
 
 resource "kubernetes_service_account" "linkerd_prometheus" {
   metadata {
-    name      = "linkerd-prometheus"
+    name      = local.linkerd_prometheus_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "prometheus"
+      "linkerd.io/control-plane-component" = local.linkerd_component_prometheus_name
     })
   }
 }
@@ -52,7 +52,7 @@ resource "kubernetes_config_map" "linkerd_prometheus_config" {
     name      = "linkerd-prometheus-config"
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "prometheus"
+      "linkerd.io/control-plane-component" = local.linkerd_component_prometheus_name
     })
     annotations = local.linkerd_annotation_created_by
   }
@@ -70,10 +70,10 @@ resource "kubernetes_service" "linkerd_prometheus" {
   ]
 
   metadata {
-    name      = "linkerd-prometheus"
+    name      = local.linkerd_prometheus_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "prometheus"
+      "linkerd.io/control-plane-component" = local.linkerd_component_prometheus_name
     })
     annotations = local.linkerd_annotation_created_by
   }
@@ -85,7 +85,7 @@ resource "kubernetes_service" "linkerd_prometheus" {
       target_port = "9090"
     }
     selector = {
-      "linkerd.io/control-plane-component" = "prometheus"
+      "linkerd.io/control-plane-component" = local.linkerd_component_prometheus_name
     }
   }
 }
@@ -99,14 +99,14 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
   ]
 
   metadata {
-    name      = "linkerd-prometheus"
+    name      = local.linkerd_prometheus_name
     namespace = local.linkerd_namespace
     labels = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
       {
-        "app.kubernetes.io/name"             = "prometheus",
-        "linkerd.io/control-plane-component" = "prometheus"
+        "app.kubernetes.io/name"             = local.linkerd_component_prometheus_name,
+        "linkerd.io/control-plane-component" = local.linkerd_component_prometheus_name
       }
     )
     annotations = local.linkerd_annotation_created_by
@@ -115,8 +115,8 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
     replicas = 1
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
-        "linkerd.io/control-plane-component" = "prometheus",
-        "linkerd.io/proxy-deployment"        = "linkerd-prometheus"
+        "linkerd.io/control-plane-component" = local.linkerd_component_prometheus_name,
+        "linkerd.io/proxy-deployment"        = local.linkerd_prometheus_name
       })
     }
     template {
@@ -125,8 +125,8 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
           local.linkerd_label_control_plane_ns,
           local.linkerd_label_workload_ns,
           {
-            "linkerd.io/control-plane-component" = "prometheus",
-            "linkerd.io/proxy-deployment"        = "linkerd-prometheus"
+            "linkerd.io/control-plane-component" = local.linkerd_component_prometheus_name,
+            "linkerd.io/proxy-deployment"        = local.linkerd_prometheus_name
           }
         )
         annotations = local.linkerd_annotations_for_deployment
@@ -182,7 +182,7 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
           }
         }
         container {
-          name  = "prometheus"
+          name  = local.linkerd_component_prometheus_name
           image = "prom/prometheus:v2.15.2"
           args  = ["--storage.tsdb.path=/data", "--storage.tsdb.retention.time=6h", "--config.file=/etc/prometheus/prometheus.yml", "--log.level=info"]
           port {
@@ -384,7 +384,7 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
           }
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
-        service_account_name = "linkerd-prometheus"
+        service_account_name = local.linkerd_prometheus_name
       }
     }
   }

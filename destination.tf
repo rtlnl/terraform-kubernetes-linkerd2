@@ -2,7 +2,7 @@ resource "kubernetes_cluster_role" "linkerd_destination" {
   metadata {
     name = "linkerd-linkerd-destination"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "destination"
+      "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
     })
   }
   rule {
@@ -36,12 +36,12 @@ resource "kubernetes_cluster_role_binding" "linkerd_destination" {
   metadata {
     name = "linkerd-linkerd-destination"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "destination"
+      "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
     })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-destination"
+    name      = local.linkerd_destination_name
     namespace = local.linkerd_namespace
   }
   role_ref {
@@ -53,10 +53,10 @@ resource "kubernetes_cluster_role_binding" "linkerd_destination" {
 
 resource "kubernetes_service_account" "linkerd_destination" {
   metadata {
-    name      = "linkerd-destination"
+    name      = local.linkerd_destination_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "destination"
+      "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
     })
   }
 }
@@ -72,7 +72,7 @@ resource "kubernetes_service" "linkerd_dst" {
     name      = "linkerd-dst"
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "destination"
+      "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
     })
     annotations = local.linkerd_annotation_created_by
   }
@@ -84,7 +84,7 @@ resource "kubernetes_service" "linkerd_dst" {
       target_port = "8086"
     }
     selector = {
-      "linkerd.io/control-plane-component" = "destination"
+      "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
     }
   }
 }
@@ -97,14 +97,14 @@ resource "kubernetes_deployment" "linkerd_destination" {
   ]
 
   metadata {
-    name      = "linkerd-destination"
+    name      = local.linkerd_destination_name
     namespace = local.linkerd_namespace
     labels    = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
       {
-        "app.kubernetes.io/name"             = "destination",
-        "linkerd.io/control-plane-component" = "destination"
+        "app.kubernetes.io/name"             = local.linkerd_component_destination_name,
+        "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
       }
     )
     annotations = local.linkerd_annotation_created_by
@@ -113,8 +113,8 @@ resource "kubernetes_deployment" "linkerd_destination" {
     replicas = 1
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
-        "linkerd.io/control-plane-component" = "destination",
-        "linkerd.io/proxy-deployment"        = "linkerd-destination"
+        "linkerd.io/control-plane-component" = local.linkerd_component_destination_name,
+        "linkerd.io/proxy-deployment"        = local.linkerd_destination_name
       })
     }
     template {
@@ -123,8 +123,8 @@ resource "kubernetes_deployment" "linkerd_destination" {
           local.linkerd_label_control_plane_ns,
           local.linkerd_label_workload_ns,
           {
-            "linkerd.io/control-plane-component" = "destination",
-            "linkerd.io/proxy-deployment"        = "linkerd-destination"
+            "linkerd.io/control-plane-component" = local.linkerd_component_destination_name,
+            "linkerd.io/proxy-deployment"        = local.linkerd_destination_name
           }
         )
         annotations = local.linkerd_annotations_for_deployment
@@ -177,10 +177,10 @@ resource "kubernetes_deployment" "linkerd_destination" {
           }
         }
         container {
-          name  = "destination"
+          name  = local.linkerd_component_destination_name
           image =  local.linkerd_deployment_controller_image
           args = [
-            "destination",
+            local.linkerd_component_destination_name,
             "-addr=:8086",
             "-controller-namespace=linkerd",
             "-enable-h2-upgrade=true",
@@ -377,7 +377,7 @@ resource "kubernetes_deployment" "linkerd_destination" {
           }
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
-        service_account_name = "linkerd-destination"
+        service_account_name = local.linkerd_destination_name
         dynamic "affinity" {
           for_each = var.high_availability == true ? [map("ha", true)] : []
 
@@ -388,7 +388,7 @@ resource "kubernetes_deployment" "linkerd_destination" {
                     match_expressions {
                         key      = "linkerd.io/control-plane-component"
                         operator = "In"
-                        values   = ["destination"]
+                        values   = [local.linkerd_component_destination_name]
                     }
                     }
                     topology_key = "kubernetes.io/hostname"
@@ -400,7 +400,7 @@ resource "kubernetes_deployment" "linkerd_destination" {
                         match_expressions {
                         key      = "linkerd.io/control-plane-component"
                         operator = "In"
-                        values   = ["destination"]
+                        values   = [local.linkerd_component_destination_name]
                         }
                     }
                     topology_key = "failure-domain.beta.kubernetes.io/zone"

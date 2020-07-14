@@ -1,9 +1,9 @@
 resource "kubernetes_service_account" "linkerd_grafana" {
   metadata {
-    name      = "linkerd-grafana"
+    name      = local.linkerd_grafana_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "grafana"
+      "linkerd.io/control-plane-component" = local.linkerd_component_grafana_name
     })
   }
 }
@@ -16,7 +16,7 @@ resource "kubernetes_config_map" "linkerd_grafana_config" {
     name      = "linkerd-grafana-config"
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "grafana"
+      "linkerd.io/control-plane-component" = local.linkerd_component_grafana_name
     })
     annotations = local.linkerd_annotation_created_by
   }
@@ -31,10 +31,10 @@ resource "kubernetes_service" "linkerd_grafana" {
   depends_on = [kubernetes_config_map.linkerd_grafana_config]
 
   metadata {
-    name      = "linkerd-grafana"
+    name      = local.linkerd_grafana_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "grafana"
+      "linkerd.io/control-plane-component" = local.linkerd_component_grafana_name
     })
     annotations = local.linkerd_annotation_created_by
   }
@@ -46,7 +46,7 @@ resource "kubernetes_service" "linkerd_grafana" {
       target_port = "3000"
     }
     selector = {
-      "linkerd.io/control-plane-component" = "grafana"
+      "linkerd.io/control-plane-component" = local.linkerd_component_grafana_name
     }
   }
 }
@@ -55,14 +55,14 @@ resource "kubernetes_deployment" "linkerd_grafana" {
   depends_on = [kubernetes_config_map.linkerd_grafana_config]
 
   metadata {
-    name      = "linkerd-grafana"
+    name      = local.linkerd_grafana_name
     namespace = local.linkerd_namespace
     labels    = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
       {
-        "app.kubernetes.io/name"             = "grafana",
-        "linkerd.io/control-plane-component" = "grafana"
+        "app.kubernetes.io/name"             = local.linkerd_component_grafana_name,
+        "linkerd.io/control-plane-component" = local.linkerd_component_grafana_name
       }
     )
     annotations = local.linkerd_annotation_created_by
@@ -71,8 +71,8 @@ resource "kubernetes_deployment" "linkerd_grafana" {
     replicas = 1
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
-        "linkerd.io/control-plane-component" = "grafana",
-        "linkerd.io/proxy-deployment"        = "linkerd-grafana"
+        "linkerd.io/control-plane-component" = local.linkerd_component_grafana_name,
+        "linkerd.io/proxy-deployment"        = local.linkerd_grafana_name
       })
     }
     template {
@@ -81,8 +81,8 @@ resource "kubernetes_deployment" "linkerd_grafana" {
           local.linkerd_label_control_plane_ns,
           local.linkerd_label_workload_ns,
           {
-            "linkerd.io/control-plane-component" = "grafana",
-            "linkerd.io/proxy-deployment"        = "linkerd-grafana"
+            "linkerd.io/control-plane-component" = local.linkerd_component_grafana_name,
+            "linkerd.io/proxy-deployment"        = local.linkerd_grafana_name
           }
         )
         annotations = local.linkerd_annotations_for_deployment
@@ -150,7 +150,7 @@ resource "kubernetes_deployment" "linkerd_grafana" {
           }
         }
         container {
-          name  = "grafana"
+          name  = local.linkerd_component_grafana_name
           image = "gcr.io/linkerd-io/grafana:stable-2.8.1"
           port {
             name           = "http"
@@ -353,7 +353,7 @@ resource "kubernetes_deployment" "linkerd_grafana" {
         node_selector = {
           "beta.kubernetes.io/os" = "linux"
         }
-        service_account_name = "linkerd-grafana"
+        service_account_name = local.linkerd_grafana_name
       }
     }
   }

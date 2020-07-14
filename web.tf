@@ -1,9 +1,9 @@
 resource "kubernetes_role" "linkerd_web" {
   metadata {
-    name      = "linkerd-web"
+    name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "web"
+      "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     })
   }
   rule {
@@ -31,21 +31,21 @@ resource "kubernetes_role" "linkerd_web" {
 
 resource "kubernetes_role_binding" "linkerd_web" {
   metadata {
-    name      = "linkerd-web"
+    name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "web"
+      "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-web"
+    name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "Role"
-    name      = "linkerd-web"
+    name      = local.linkerd_web_name
   }
 }
 
@@ -53,7 +53,7 @@ resource "kubernetes_cluster_role" "linkerd_web_check" {
   metadata {
     name = "linkerd-linkerd-web-check"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "web"
+      "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     })
   }
   rule {
@@ -92,12 +92,12 @@ resource "kubernetes_cluster_role_binding" "linkerd_web_check" {
   metadata {
     name = "linkerd-linkerd-web-check"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "web"
+      "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-web"
+    name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
   }
   role_ref {
@@ -111,12 +111,12 @@ resource "kubernetes_cluster_role_binding" "linkerd_linkerd_web_admin" {
   metadata {
     name = "linkerd-linkerd-web-admin"
     labels = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "web"
+      "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-web"
+    name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
   }
   role_ref {
@@ -128,10 +128,10 @@ resource "kubernetes_cluster_role_binding" "linkerd_linkerd_web_admin" {
 
 resource "kubernetes_service_account" "linkerd_web" {
   metadata {
-    name      = "linkerd-web"
+    name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "web"
+      "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     })
   }
 }
@@ -147,10 +147,10 @@ resource "kubernetes_service" "linkerd_web" {
   ]
 
   metadata {
-    name      = "linkerd-web"
+    name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
-      "linkerd.io/control-plane-component" = "web"
+      "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     })
     annotations = local.linkerd_annotation_created_by
   }
@@ -167,7 +167,7 @@ resource "kubernetes_service" "linkerd_web" {
       target_port = "9994"
     }
     selector = {
-      "linkerd.io/control-plane-component" = "web"
+      "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     }
   }
 }
@@ -183,14 +183,14 @@ resource "kubernetes_deployment" "linkerd_web" {
   ]
 
   metadata {
-    name      = "linkerd-web"
+    name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
     labels    = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
       {
-        "app.kubernetes.io/name"             = "web",
-        "linkerd.io/control-plane-component" = "web"
+        "app.kubernetes.io/name"             = local.linkerd_component_web_name,
+        "linkerd.io/control-plane-component" = local.linkerd_component_web_name
       }
     )
     annotations = local.linkerd_annotation_created_by
@@ -199,8 +199,8 @@ resource "kubernetes_deployment" "linkerd_web" {
     replicas = 1
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
-        "linkerd.io/control-plane-component" = "web",
-        "linkerd.io/proxy-deployment"        = "linkerd-web"
+        "linkerd.io/control-plane-component" = local.linkerd_component_web_name,
+        "linkerd.io/proxy-deployment"        = local.linkerd_web_name
       })
     }
     template {
@@ -209,8 +209,8 @@ resource "kubernetes_deployment" "linkerd_web" {
           local.linkerd_label_control_plane_ns,
           local.linkerd_label_workload_ns,
           {
-            "linkerd.io/control-plane-component" = "web",
-            "linkerd.io/proxy-deployment"        = "linkerd-web"
+            "linkerd.io/control-plane-component" = local.linkerd_component_web_name,
+            "linkerd.io/proxy-deployment"        = local.linkerd_web_name
           }
         )
         annotations = local.linkerd_annotations_for_deployment
@@ -263,7 +263,7 @@ resource "kubernetes_deployment" "linkerd_web" {
           }
         }
         container {
-          name  = "web"
+          name  = local.linkerd_component_web_name
           image = "gcr.io/linkerd-io/web:stable-2.8.1"
           args = [
             "-api-addr=linkerd-controller-api.linkerd.svc.cluster.local:8085",
@@ -463,7 +463,7 @@ resource "kubernetes_deployment" "linkerd_web" {
           }
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
-        service_account_name = "linkerd-web"
+        service_account_name = local.linkerd_web_name
       }
     }
   }
@@ -501,7 +501,7 @@ resource "kubernetes_deployment" "linkerd_web" {
 #       http {
 #         path {
 #           backend {
-#             service_name = "linkerd-web"
+#             service_name = local.linkerd_web_name
 #             service_port = "8084"
 #           }
 #         }
