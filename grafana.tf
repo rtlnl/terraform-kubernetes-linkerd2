@@ -85,11 +85,7 @@ resource "kubernetes_deployment" "linkerd_grafana" {
             "linkerd.io/proxy-deployment"        = "linkerd-grafana"
           }
         )
-        annotations = {
-          "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
-          "linkerd.io/identity-mode" = "default",
-          "linkerd.io/proxy-version" = "stable-2.8.1"
-        }
+        annotations = local.linkerd_annotations_for_deployment
       }
       spec {
         volume {
