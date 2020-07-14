@@ -2,10 +2,9 @@ resource "kubernetes_role" "linkerd_web" {
   metadata {
     name      = "linkerd-web"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "web",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels    = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "web"
+    })
   }
   rule {
     verbs          = ["get"]
@@ -34,10 +33,9 @@ resource "kubernetes_role_binding" "linkerd_web" {
   metadata {
     name      = "linkerd-web"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "web",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels    = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "web"
+    })
   }
   subject {
     kind      = "ServiceAccount"
@@ -54,10 +52,9 @@ resource "kubernetes_role_binding" "linkerd_web" {
 resource "kubernetes_cluster_role" "linkerd_web_check" {
   metadata {
     name = "linkerd-linkerd-web-check"
-    labels = {
-      "linkerd.io/control-plane-component" = "web",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "web"
+    })
   }
   rule {
     verbs      = ["list"]
@@ -94,10 +91,9 @@ resource "kubernetes_cluster_role" "linkerd_web_check" {
 resource "kubernetes_cluster_role_binding" "linkerd_web_check" {
   metadata {
     name = "linkerd-linkerd-web-check"
-    labels = {
-      "linkerd.io/control-plane-component" = "web",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "web"
+    })
   }
   subject {
     kind      = "ServiceAccount"
@@ -114,10 +110,9 @@ resource "kubernetes_cluster_role_binding" "linkerd_web_check" {
 resource "kubernetes_cluster_role_binding" "linkerd_linkerd_web_admin" {
   metadata {
     name = "linkerd-linkerd-web-admin"
-    labels = {
-      "linkerd.io/control-plane-component" = "web",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "web"
+    })
   }
   subject {
     kind      = "ServiceAccount"
@@ -135,10 +130,9 @@ resource "kubernetes_service_account" "linkerd_web" {
   metadata {
     name      = "linkerd-web"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "web",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels    = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "web"
+    })
   }
 }
 
@@ -155,11 +149,10 @@ resource "kubernetes_service" "linkerd_web" {
   metadata {
     name      = "linkerd-web"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "web",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
-    annotations = local.common_linkerd_annotations
+    labels    = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "web"
+    })
+    annotations = local.linkerd_annotation_created_by
   }
   spec {
     type = "ClusterIP"
@@ -192,32 +185,34 @@ resource "kubernetes_deployment" "linkerd_web" {
   metadata {
     name      = "linkerd-web"
     namespace = "linkerd"
-    labels = {
-      "app.kubernetes.io/name"             = "web",
-      "app.kubernetes.io/part-of"          = "Linkerd",
-      "app.kubernetes.io/version"          = "stable-2.8.1",
-      "linkerd.io/control-plane-component" = "web",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
-    annotations = local.common_linkerd_annotations
+    labels    = merge(
+      local.linkerd_label_control_plane_ns,
+      local.linkerd_label_partof_version,
+      {
+        "app.kubernetes.io/name"             = "web",
+        "linkerd.io/control-plane-component" = "web"
+      }
+    )
+    annotations = local.linkerd_annotation_created_by
   }
   spec {
     replicas = 1
     selector {
-      match_labels = {
+      match_labels = merge(local.linkerd_label_control_plane_ns, {
         "linkerd.io/control-plane-component" = "web",
-        "linkerd.io/control-plane-ns"        = "linkerd",
         "linkerd.io/proxy-deployment"        = "linkerd-web"
-      }
+      })
     }
     template {
       metadata {
-        labels = {
-          "linkerd.io/control-plane-component" = "web",
-          "linkerd.io/control-plane-ns"        = "linkerd",
-          "linkerd.io/proxy-deployment"        = "linkerd-web",
-          "linkerd.io/workload-ns"             = "linkerd"
-        }
+        labels = merge(
+          local.linkerd_label_control_plane_ns,
+          local.linkerd_label_workload_ns,
+          {
+            "linkerd.io/control-plane-component" = "web",
+            "linkerd.io/proxy-deployment"        = "linkerd-web"
+          }
+        )
         annotations = {
           "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
           "linkerd.io/identity-mode" = "default",

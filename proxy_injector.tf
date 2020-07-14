@@ -1,7 +1,7 @@
 resource "kubernetes_cluster_role" "linkerd_proxy_injector" {
   metadata {
     name = "linkerd-linkerd-proxy-injector"
-    labels = merge(local.common_linkerd_labels, {
+    labels = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "proxy-injector"
     })
   }
@@ -35,7 +35,7 @@ resource "kubernetes_cluster_role" "linkerd_proxy_injector" {
 resource "kubernetes_cluster_role_binding" "linkerd_proxy_injector" {
   metadata {
     name = "linkerd-linkerd-proxy-injector"
-    labels = merge(local.common_linkerd_labels, {
+    labels = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "proxy-injector"
     })
   }
@@ -55,7 +55,7 @@ resource "kubernetes_service_account" "linkerd_proxy_injector" {
   metadata {
     name      = "linkerd-proxy-injector"
     namespace = "linkerd"
-    labels = merge(local.common_linkerd_labels, {
+    labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "proxy-injector"
     })
   }
@@ -71,10 +71,10 @@ resource "kubernetes_service" "linkerd_proxy_injector" {
   metadata {
     name      = "linkerd-proxy-injector"
     namespace = "linkerd"
-    labels = merge(local.common_linkerd_labels, {
+    labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "proxy-injector"
     })
-    annotations = local.common_linkerd_annotations
+    annotations = local.linkerd_annotation_created_by
   }
   spec {
     type = "ClusterIP"
@@ -99,13 +99,15 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
   metadata {
     name      = "linkerd-proxy-injector"
     namespace = "linkerd"
-    labels = merge(local.common_linkerd_labels, {
-      "app.kubernetes.io/name"             = "proxy-injector",
-      "app.kubernetes.io/part-of"          = "Linkerd",
-      "app.kubernetes.io/version"          = "stable-2.8.1",
-      "linkerd.io/control-plane-component" = "proxy-injector"
-    })
-    annotations = local.common_linkerd_annotations
+    labels    = merge(
+      local.linkerd_label_control_plane_ns,
+      local.linkerd_label_partof_version,
+      {
+        "app.kubernetes.io/name"             = "proxy-injector",
+        "linkerd.io/control-plane-component" = "proxy-injector"
+      }
+    )
+    annotations = local.linkerd_annotation_created_by
   }
   spec {
     replicas = 1
@@ -116,11 +118,14 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
     }
     template {
       metadata {
-        labels = merge(local.common_linkerd_labels, {
-          "linkerd.io/control-plane-component" = "proxy-injector",
-          "linkerd.io/proxy-deployment"        = "linkerd-proxy-injector",
-          "linkerd.io/workload-ns"             = "linkerd"
-        })
+        labels = merge(
+          local.linkerd_label_control_plane_ns,
+          local.linkerd_label_workload_ns,
+          {
+            "linkerd.io/control-plane-component" = "proxy-injector",
+            "linkerd.io/proxy-deployment"        = "linkerd-proxy-injector"
+          }
+        )
         annotations = {
           "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
           "linkerd.io/identity-mode" = "default",
@@ -386,29 +391,29 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
 
           content {
             pod_anti_affinity {
-                required_during_scheduling_ignored_during_execution {
-                    label_selector {
+              required_during_scheduling_ignored_during_execution {
+                label_selector {
+                  match_expressions {
+                    key      = "linkerd.io/control-plane-component"
+                    operator = "In"
+                    values   = ["proxy-injector"]
+                  }
+                }
+                topology_key = "kubernetes.io/hostname"
+              }
+              preferred_during_scheduling_ignored_during_execution {
+                weight = 100
+                pod_affinity_term {
+                  label_selector {
                     match_expressions {
-                        key      = "linkerd.io/control-plane-component"
-                        operator = "In"
-                        values   = ["proxy-injector"]
+                      key      = "linkerd.io/control-plane-component"
+                      operator = "In"
+                      values   = ["proxy-injector"]
                     }
-                    }
-                    topology_key = "kubernetes.io/hostname"
+                  }
+                  topology_key = "failure-domain.beta.kubernetes.io/zone"
                 }
-                preferred_during_scheduling_ignored_during_execution {
-                    weight = 100
-                    pod_affinity_term {
-                    label_selector {
-                        match_expressions {
-                        key      = "linkerd.io/control-plane-component"
-                        operator = "In"
-                        values   = ["proxy-injector"]
-                        }
-                    }
-                    topology_key = "failure-domain.beta.kubernetes.io/zone"
-                    }
-                }
+              }
             }
           }
         }

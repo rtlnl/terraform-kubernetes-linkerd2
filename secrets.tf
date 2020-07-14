@@ -28,7 +28,7 @@ resource "kubernetes_secret" "linkerd_proxy_injector_tls" {
       "linkerd.io/control-plane-component" = "proxy-injector",
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
-    annotations = local.common_linkerd_annotations
+    annotations = local.linkerd_annotation_created_by
   }
   type = "Opaque"
   data = {
@@ -45,7 +45,7 @@ resource "kubernetes_secret" "linkerd_sp_validator_tls" {
       "linkerd.io/control-plane-component" = "sp-validator",
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
-    annotations = local.common_linkerd_annotations
+    annotations = local.linkerd_annotation_created_by
   }
   type = "Opaque"
   data = {
@@ -62,7 +62,7 @@ resource "kubernetes_secret" "linkerd_tap_tls" {
       "linkerd.io/control-plane-component" = "tap",
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
-    annotations = local.common_linkerd_annotations
+    annotations = local.linkerd_annotation_created_by
   }
   type = "Opaque"
   data = {

@@ -2,9 +2,7 @@ resource "kubernetes_role" "linkerd_heartbeat" {
   metadata {
     name      = "linkerd-heartbeat"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-ns" = "linkerd"
-    }
+    labels    = local.linkerd_label_control_plane_ns
   }
   rule {
     verbs          = ["get"]
@@ -18,9 +16,7 @@ resource "kubernetes_role_binding" "linkerd_heartbeat" {
   metadata {
     name      = "linkerd-heartbeat"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-ns" = "linkerd"
-    }
+    labels    = local.linkerd_label_control_plane_ns
   }
   subject {
     kind      = "ServiceAccount"
@@ -38,10 +34,9 @@ resource "kubernetes_service_account" "linkerd_heartbeat" {
   metadata {
     name      = "linkerd-heartbeat"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "heartbeat",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels    = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "heartbeat"
+    })
   }
 }
 
@@ -55,14 +50,15 @@ resource "kubernetes_cron_job" "linkerd_heartbeat" {
   metadata {
     name      = "linkerd-heartbeat"
     namespace = "linkerd"
-    labels = {
-      "app.kubernetes.io/name"             = "heartbeat",
-      "app.kubernetes.io/part-of"          = "Linkerd",
-      "app.kubernetes.io/version"          = "stable-2.8.1",
-      "linkerd.io/control-plane-component" = "heartbeat",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
-    annotations = local.common_linkerd_annotations
+    labels    = merge(
+      local.linkerd_label_control_plane_ns,
+      local.linkerd_label_partof_version,
+      {
+        "app.kubernetes.io/name"             = "heartbeat",
+        "linkerd.io/control-plane-component" = "heartbeat",
+      }
+    )
+    annotations = local.linkerd_annotation_created_by
   }
   spec {
     schedule = "16 8 * * * "
@@ -72,11 +68,10 @@ resource "kubernetes_cron_job" "linkerd_heartbeat" {
       spec {
         template {
           metadata {
-            labels = {
-              "linkerd.io/control-plane-component" = "heartbeat",
-              "linkerd.io/workload-ns"             = "linkerd"
-            }
-            annotations = local.common_linkerd_annotations
+            labels = merge(local.linkerd_label_workload_ns, {
+              "linkerd.io/control-plane-component" = "heartbeat"
+            })
+            annotations = local.linkerd_annotation_created_by
           }
           spec {
             automount_service_account_token = var.automount_service_account_token

@@ -2,7 +2,7 @@ resource "kubernetes_role" "linkerd_psp" {
   metadata {
     name      = "linkerd-psp"
     namespace = "linkerd"
-    labels = local.common_linkerd_labels
+    labels    = local.linkerd_label_control_plane_ns
   }
   rule {
     verbs          = ["use"]
@@ -16,7 +16,7 @@ resource "kubernetes_role_binding" "linkerd_psp" {
   metadata {
     name      = "linkerd-psp"
     namespace = "linkerd"
-    labels = local.common_linkerd_labels
+    labels    = local.linkerd_label_control_plane_ns
   }
   subject {
     kind      = "ServiceAccount"
@@ -78,7 +78,7 @@ resource "kubernetes_role_binding" "linkerd_psp" {
 resource "kubernetes_cluster_role" "linkerd_controller" {
   metadata {
     name = "linkerd-linkerd-controller"
-    labels = merge(local.common_linkerd_labels, {
+    labels = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "controller"
     })
   }
@@ -112,7 +112,7 @@ resource "kubernetes_cluster_role" "linkerd_controller" {
 resource "kubernetes_cluster_role_binding" "linkerd_controller" {
   metadata {
     name = "linkerd-linkerd-controller"
-    labels = merge(local.common_linkerd_labels, {
+    labels = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "controller"
     })
   }
@@ -132,7 +132,7 @@ resource "kubernetes_service_account" "linkerd_controller" {
   metadata {
     name      = "linkerd-controller"
     namespace = "linkerd"
-    labels = merge(local.common_linkerd_labels, {
+    labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "controller"
     })
   }
@@ -150,29 +150,34 @@ resource "kubernetes_deployment" "linkerd_controller" {
   metadata {
     name      = "linkerd-controller"
     namespace = "linkerd"
-    labels = merge(local.common_linkerd_labels, {
-      "app.kubernetes.io/name"             = "controller",
-      "app.kubernetes.io/part-of"          = "Linkerd",
-      "app.kubernetes.io/version"          = "stable-2.8.1",
-      "linkerd.io/control-plane-component" = "controller"
-    })
-    annotations = local.common_linkerd_annotations
+    labels    = merge(
+      local.linkerd_label_control_plane_ns,
+      local.linkerd_label_partof_version,
+      {
+        "app.kubernetes.io/name"             = "controller",
+        "linkerd.io/control-plane-component" = "controller"
+      }
+    )
+    annotations = local.linkerd_annotation_created_by
   }
   spec {
     replicas = 1
     selector {
-      match_labels = merge(local.common_linkerd_labels, {
+      match_labels = merge(local.linkerd_label_control_plane_ns, {
         "linkerd.io/control-plane-component" = "controller",
         "linkerd.io/proxy-deployment"        = "linkerd-controller"
       })
     }
     template {
       metadata {
-        labels = merge({
-          "linkerd.io/control-plane-component" = "controller",
-          "linkerd.io/proxy-deployment"        = "linkerd-controller",
-          "linkerd.io/workload-ns"             = "linkerd"
-        })
+        labels = merge(
+          local.linkerd_label_control_plane_ns,
+          local.linkerd_label_workload_ns,
+          {
+            "linkerd.io/control-plane-component" = "controller",
+            "linkerd.io/proxy-deployment"        = "linkerd-controller",
+          }
+        )
         annotations = {
           "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
           "linkerd.io/identity-mode" = "default",
@@ -481,10 +486,10 @@ resource "kubernetes_service" "linkerd_controller_api" {
   metadata {
     name      = "linkerd-controller-api"
     namespace = "linkerd"
-    labels = merge(local.common_linkerd_labels, {
+    labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "controller"
     })
-    annotations = local.common_linkerd_annotations
+    annotations = local.linkerd_annotation_created_by
   }
   spec {
     type = "ClusterIP"

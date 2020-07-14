@@ -1,10 +1,9 @@
 resource "kubernetes_cluster_role" "linkerd_prometheus" {
   metadata {
     name = "linkerd-linkerd-prometheus"
-    labels = {
-      "linkerd.io/control-plane-component" = "prometheus",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "prometheus"
+    })
   }
   rule {
     verbs      = ["get", "list", "watch"]
@@ -16,10 +15,9 @@ resource "kubernetes_cluster_role" "linkerd_prometheus" {
 resource "kubernetes_cluster_role_binding" "linkerd_prometheus" {
   metadata {
     name = "linkerd-linkerd-prometheus"
-    labels = {
-      "linkerd.io/control-plane-component" = "prometheus",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "prometheus"
+    })
   }
   subject {
     kind      = "ServiceAccount"
@@ -37,10 +35,9 @@ resource "kubernetes_service_account" "linkerd_prometheus" {
   metadata {
     name      = "linkerd-prometheus"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "prometheus",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels    = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "prometheus"
+    })
   }
 }
 
@@ -54,11 +51,10 @@ resource "kubernetes_config_map" "linkerd_prometheus_config" {
   metadata {
     name      = "linkerd-prometheus-config"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "prometheus",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
-    annotations = local.common_linkerd_annotations
+    labels    = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "prometheus"
+    })
+    annotations = local.linkerd_annotation_created_by
   }
   data = {
     "prometheus.yml" = file("${path.module}/prometheus/config.yaml")
@@ -76,11 +72,10 @@ resource "kubernetes_service" "linkerd_prometheus" {
   metadata {
     name      = "linkerd-prometheus"
     namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "prometheus",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
-    annotations = local.common_linkerd_annotations
+    labels    = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = "prometheus"
+    })
+    annotations = local.linkerd_annotation_created_by
   }
   spec {
     type = "ClusterIP"
@@ -106,32 +101,34 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
   metadata {
     name      = "linkerd-prometheus"
     namespace = "linkerd"
-    labels = {
-      "app.kubernetes.io/name"             = "prometheus",
-      "app.kubernetes.io/part-of"          = "Linkerd",
-      "app.kubernetes.io/version"          = "stable-2.8.1",
-      "linkerd.io/control-plane-component" = "prometheus",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
-    annotations = local.common_linkerd_annotations
+    labels = merge(
+      local.linkerd_label_control_plane_ns,
+      local.linkerd_label_partof_version,
+      {
+        "app.kubernetes.io/name"             = "prometheus",
+        "linkerd.io/control-plane-component" = "prometheus"
+      }
+    )
+    annotations = local.linkerd_annotation_created_by
   }
   spec {
     replicas = 1
     selector {
-      match_labels = {
+      match_labels = merge(local.linkerd_label_control_plane_ns, {
         "linkerd.io/control-plane-component" = "prometheus",
-        "linkerd.io/control-plane-ns"        = "linkerd",
         "linkerd.io/proxy-deployment"        = "linkerd-prometheus"
-      }
+      })
     }
     template {
       metadata {
-        labels = {
-          "linkerd.io/control-plane-component" = "prometheus",
-          "linkerd.io/control-plane-ns"        = "linkerd",
-          "linkerd.io/proxy-deployment"        = "linkerd-prometheus",
-          "linkerd.io/workload-ns"             = "linkerd"
-        }
+        labels = merge(
+          local.linkerd_label_control_plane_ns,
+          local.linkerd_label_workload_ns,
+          {
+            "linkerd.io/control-plane-component" = "prometheus",
+            "linkerd.io/proxy-deployment"        = "linkerd-prometheus"
+          }
+        )
         annotations = {
           "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
           "linkerd.io/identity-mode" = "default",
