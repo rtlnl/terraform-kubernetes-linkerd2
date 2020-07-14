@@ -23,7 +23,7 @@
 resource "kubernetes_secret" "linkerd_proxy_injector_tls" {
   metadata {
     name      = "linkerd-proxy-injector-tls"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels = {
       "linkerd.io/control-plane-component" = "proxy-injector",
       "linkerd.io/control-plane-ns"        = "linkerd"
@@ -40,7 +40,7 @@ resource "kubernetes_secret" "linkerd_proxy_injector_tls" {
 resource "kubernetes_secret" "linkerd_sp_validator_tls" {
   metadata {
     name      = "linkerd-sp-validator-tls"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels = {
       "linkerd.io/control-plane-component" = "sp-validator",
       "linkerd.io/control-plane-ns"        = "linkerd"
@@ -57,7 +57,7 @@ resource "kubernetes_secret" "linkerd_sp_validator_tls" {
 resource "kubernetes_secret" "linkerd_tap_tls" {
   metadata {
     name      = "linkerd-tap-tls"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels = {
       "linkerd.io/control-plane-component" = "tap",
       "linkerd.io/control-plane-ns"        = "linkerd"
@@ -74,7 +74,7 @@ resource "kubernetes_secret" "linkerd_tap_tls" {
 resource "kubernetes_secret" "linkerd_identity_issuer" {
   metadata {
     name      = "linkerd-identity-issuer"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels = {
       "linkerd.io/control-plane-component" = "identity",
       "linkerd.io/control-plane-ns"        = "linkerd"

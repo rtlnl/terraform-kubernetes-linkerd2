@@ -1,7 +1,7 @@
 resource "kubernetes_service_account" "linkerd_grafana" {
   metadata {
     name      = "linkerd-grafana"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "grafana"
     })
@@ -14,7 +14,7 @@ resource "kubernetes_config_map" "linkerd_grafana_config" {
 
   metadata {
     name      = "linkerd-grafana-config"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "grafana"
     })
@@ -32,7 +32,7 @@ resource "kubernetes_service" "linkerd_grafana" {
 
   metadata {
     name      = "linkerd-grafana"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "grafana"
     })
@@ -56,7 +56,7 @@ resource "kubernetes_deployment" "linkerd_grafana" {
 
   metadata {
     name      = "linkerd-grafana"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
@@ -118,18 +118,18 @@ resource "kubernetes_deployment" "linkerd_grafana" {
         automount_service_account_token = var.automount_service_account_token
         init_container {
           name  = "linkerd-init"
-          image = "gcr.io/linkerd-io/proxy-init:v1.3.3"
+          image =  local.linkerd_deployment_proxy_init_image
           args = [
             "--incoming-proxy-port",
-            "4143",
+            "${local.linkerd_deployment_incoming_proxy_port}",
             "--outgoing-proxy-port",
-            "4140",
+            "${local.linkerd_deployment_outgoing_proxy_port}",
             "--proxy-uid",
-            "2102",
+            "${local.linkerd_deployment_proxy_uid}",
             "--inbound-ports-to-ignore",
-            "4190,4191",
+            "${local.linkerd_deployment_proxy_control_port},4191",
             "--outbound-ports-to-ignore",
-            "443"
+            "${local.linkerd_deployment_outbound_port}"
           ]
           resources {
             limits {
@@ -203,14 +203,14 @@ resource "kubernetes_deployment" "linkerd_grafana" {
         }
         container {
           name  = "linkerd-proxy"
-          image = "gcr.io/linkerd-io/proxy:stable-2.8.1"
+          image = local.linkerd_deployment_proxy_image
           port {
             name           = "linkerd-proxy"
-            container_port = 4143
+            container_port = local.linkerd_deployment_incoming_proxy_port
           }
           port {
             name           = "linkerd-admin"
-            container_port = 4191
+            container_port = local.linkerd_deployment_admin_port
           }
           env {
             name  = "LINKERD2_PROXY_LOG"
@@ -226,7 +226,7 @@ resource "kubernetes_deployment" "linkerd_grafana" {
           }
           env {
             name  = "LINKERD2_PROXY_CONTROL_LISTEN_ADDR"
-            value = "0.0.0.0:4190"
+            value = "0.0.0.0:${local.linkerd_deployment_proxy_control_port}"
           }
           env {
             name  = "LINKERD2_PROXY_ADMIN_LISTEN_ADDR"

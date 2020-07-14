@@ -1,7 +1,7 @@
 resource "kubernetes_role" "linkerd_psp" {
   metadata {
     name      = "linkerd-psp"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = local.linkerd_label_control_plane_ns
   }
   rule {
@@ -15,58 +15,58 @@ resource "kubernetes_role" "linkerd_psp" {
 resource "kubernetes_role_binding" "linkerd_psp" {
   metadata {
     name      = "linkerd-psp"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = local.linkerd_label_control_plane_ns
   }
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-controller"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-destination"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-grafana"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-heartbeat"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-identity"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-prometheus"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-proxy-injector"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-sp-validator"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-tap"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-web"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
@@ -119,7 +119,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_controller" {
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-controller"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
@@ -131,7 +131,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_controller" {
 resource "kubernetes_service_account" "linkerd_controller" {
   metadata {
     name      = "linkerd-controller"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "controller"
     })
@@ -149,7 +149,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
 
   metadata {
     name      = "linkerd-controller"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
@@ -196,18 +196,18 @@ resource "kubernetes_deployment" "linkerd_controller" {
         automount_service_account_token = var.automount_service_account_token
         init_container {
           name  = "linkerd-init"
-          image = "gcr.io/linkerd-io/proxy-init:v1.3.3"
+          image =  local.linkerd_deployment_proxy_init_image
           args = [
             "--incoming-proxy-port",
-            "4143",
+            "${local.linkerd_deployment_incoming_proxy_port}",
             "--outgoing-proxy-port",
-            "4140",
+            "${local.linkerd_deployment_outgoing_proxy_port}",
             "--proxy-uid",
-            "2102",
+            "${local.linkerd_deployment_proxy_uid}",
             "--inbound-ports-to-ignore",
-            "4190,4191",
+            "${local.linkerd_deployment_proxy_control_port},${local.linkerd_deployment_admin_port}",
             "--outbound-ports-to-ignore",
-            "443"
+            "${local.linkerd_deployment_outbound_port}"
           ]
           resources {
             limits {
@@ -229,7 +229,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
         }
         container {
           name  = "public-api"
-          image = "gcr.io/linkerd-io/controller:stable-2.8.1"
+          image =  local.linkerd_deployment_controller_image
           args = [
             "public-api",
             "-prometheus-url=http://linkerd-prometheus.linkerd.svc.cluster.local:9090",
@@ -280,14 +280,14 @@ resource "kubernetes_deployment" "linkerd_controller" {
         }
         container {
           name  = "linkerd-proxy"
-          image = "gcr.io/linkerd-io/proxy:stable-2.8.1"
+          image = local.linkerd_deployment_proxy_image
           port {
             name           = "linkerd-proxy"
-            container_port = 4143
+            container_port = local.linkerd_deployment_incoming_proxy_port
           }
           port {
             name           = "linkerd-admin"
-            container_port = 4191
+            container_port = local.linkerd_deployment_admin_port
           }
           env {
             name  = "LINKERD2_PROXY_LOG"
@@ -303,11 +303,11 @@ resource "kubernetes_deployment" "linkerd_controller" {
           }
           env {
             name  = "LINKERD2_PROXY_CONTROL_LISTEN_ADDR"
-            value = "0.0.0.0:4190"
+            value = "0.0.0.0:${local.linkerd_deployment_proxy_control_port}"
           }
           env {
             name  = "LINKERD2_PROXY_ADMIN_LISTEN_ADDR"
-            value = "0.0.0.0:4191"
+            value = "0.0.0.0:${local.linkerd_deployment_admin_port}"
           }
           env {
             name  = "LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR"
@@ -315,7 +315,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
           }
           env {
             name  = "LINKERD2_PROXY_INBOUND_LISTEN_ADDR"
-            value = "0.0.0.0:4143"
+            value = "0.0.0.0:${local.linkerd_deployment_incoming_proxy_port}"
           }
           env {
             name  = "LINKERD2_PROXY_DESTINATION_GET_SUFFIXES"
@@ -410,14 +410,14 @@ resource "kubernetes_deployment" "linkerd_controller" {
           liveness_probe {
             http_get {
               path = "/live"
-              port = "4191"
+              port = local.linkerd_deployment_admin_port
             }
             initial_delay_seconds = 10
           }
           readiness_probe {
             http_get {
               path = "/ready"
-              port = "4191"
+              port = local.linkerd_deployment_admin_port
             }
             initial_delay_seconds = 2
           }
@@ -481,7 +481,7 @@ resource "kubernetes_service" "linkerd_controller_api" {
 
   metadata {
     name      = "linkerd-controller-api"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "controller"
     })

@@ -1,7 +1,7 @@
 resource "kubernetes_role" "linkerd_heartbeat" {
   metadata {
     name      = "linkerd-heartbeat"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = local.linkerd_label_control_plane_ns
   }
   rule {
@@ -15,13 +15,13 @@ resource "kubernetes_role" "linkerd_heartbeat" {
 resource "kubernetes_role_binding" "linkerd_heartbeat" {
   metadata {
     name      = "linkerd-heartbeat"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = local.linkerd_label_control_plane_ns
   }
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-heartbeat"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
@@ -33,7 +33,7 @@ resource "kubernetes_role_binding" "linkerd_heartbeat" {
 resource "kubernetes_service_account" "linkerd_heartbeat" {
   metadata {
     name      = "linkerd-heartbeat"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "heartbeat"
     })
@@ -49,7 +49,7 @@ resource "kubernetes_cron_job" "linkerd_heartbeat" {
 
   metadata {
     name      = "linkerd-heartbeat"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
@@ -77,7 +77,7 @@ resource "kubernetes_cron_job" "linkerd_heartbeat" {
             automount_service_account_token = var.automount_service_account_token
             container {
               name  = "heartbeat"
-              image = "gcr.io/linkerd-io/controller:stable-2.8.1"
+              image =  local.linkerd_deployment_controller_image
               args = [
                 "heartbeat",
                 "-prometheus-url=http://linkerd-prometheus.linkerd.svc.cluster.local:9090",

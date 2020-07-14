@@ -42,7 +42,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_proxy_injector" {
   subject {
     kind      = "ServiceAccount"
     name      = "linkerd-proxy-injector"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
@@ -54,7 +54,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_proxy_injector" {
 resource "kubernetes_service_account" "linkerd_proxy_injector" {
   metadata {
     name      = "linkerd-proxy-injector"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "proxy-injector"
     })
@@ -70,7 +70,7 @@ resource "kubernetes_service" "linkerd_proxy_injector" {
 
   metadata {
     name      = "linkerd-proxy-injector"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = "proxy-injector"
     })
@@ -98,7 +98,7 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
 
   metadata {
     name      = "linkerd-proxy-injector"
-    namespace = "linkerd"
+    namespace = local.linkerd_namespace
     labels    = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
@@ -150,18 +150,18 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
         automount_service_account_token = var.automount_service_account_token
         init_container {
           name  = "linkerd-init"
-          image = "gcr.io/linkerd-io/proxy-init:v1.3.3"
+          image =  local.linkerd_deployment_proxy_init_image
           args = [
             "--incoming-proxy-port",
-            "4143",
+            "${local.linkerd_deployment_incoming_proxy_port}",
             "--outgoing-proxy-port",
-            "4140",
+            "${local.linkerd_deployment_outgoing_proxy_port}",
             "--proxy-uid",
-            "2102",
+            "${local.linkerd_deployment_proxy_uid}",
             "--inbound-ports-to-ignore",
-            "4190,4191",
+            "${local.linkerd_deployment_proxy_control_port},4191",
             "--outbound-ports-to-ignore",
-            "443"
+            "${local.linkerd_deployment_outbound_port}"
           ]
           resources {
             limits {
@@ -183,7 +183,7 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
         }
         container {
           name  = "proxy-injector"
-          image = "gcr.io/linkerd-io/controller:stable-2.8.1"
+          image =  local.linkerd_deployment_controller_image
           args  = ["proxy-injector", "-log-level=info"]
           port {
             name           = "proxy-injector"
@@ -233,14 +233,14 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
         }
         container {
           name  = "linkerd-proxy"
-          image = "gcr.io/linkerd-io/proxy:stable-2.8.1"
+          image = local.linkerd_deployment_proxy_image
           port {
             name           = "linkerd-proxy"
-            container_port = 4143
+            container_port = local.linkerd_deployment_incoming_proxy_port
           }
           port {
             name           = "linkerd-admin"
-            container_port = 4191
+            container_port = local.linkerd_deployment_admin_port
           }
           env {
             name  = "LINKERD2_PROXY_LOG"
@@ -256,7 +256,7 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
           }
           env {
             name  = "LINKERD2_PROXY_CONTROL_LISTEN_ADDR"
-            value = "0.0.0.0:4190"
+            value = "0.0.0.0:${local.linkerd_deployment_proxy_control_port}"
           }
           env {
             name  = "LINKERD2_PROXY_ADMIN_LISTEN_ADDR"
