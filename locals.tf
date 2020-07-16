@@ -1,6 +1,8 @@
 locals {
+    # namespaces
     linkerd_namespace = "linkerd"
 
+    # component names
     linkerd_component_controller_name = "controller"
     linkerd_component_destination_name = "destination"
     linkerd_component_grafana_name = "grafana"
@@ -23,6 +25,7 @@ locals {
     linkerd_tap_name = "linkerd-tap"
     linkerd_web_name = "linkerd-web"
 
+    # annotations
     linkerd_annotation_created_by = {
         "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
     }
@@ -33,6 +36,7 @@ locals {
         "linkerd.io/proxy-version" = "stable-2.8.1"
     }
     
+    # labels
     linkerd_label_control_plane_ns = {
         "linkerd.io/control-plane-ns" = "linkerd"
     }
@@ -46,9 +50,17 @@ locals {
         "app.kubernetes.io/version" = "stable-2.8.1"
     }
 
+    # deployment images
     linkerd_deployment_proxy_image = "gcr.io/linkerd-io/proxy:stable-2.8.1"
     linkerd_deployment_proxy_init_image = "gcr.io/linkerd-io/proxy-init:v1.3.3"
     linkerd_deployment_controller_image = "gcr.io/linkerd-io/controller:stable-2.8.1"
+
+    # deployment security context
+    linkerd_deployment_security_context_user = 2013
+
+    # deployment ports
+    linkerd_deployment_proxy_port_name = "linkerd-proxy"
+    linkerd_deployment_admin_port_name = "linkerd-admin"
 
     linkerd_deployment_incoming_proxy_port = 4143
     linkerd_deployment_outgoing_proxy_port = 4140
@@ -56,4 +68,89 @@ locals {
     linkerd_deployment_proxy_control_port = 4190
     linkerd_deployment_admin_port = 4191
     linkerd_deployment_outbound_port = 433
+
+    # deployment env variables
+    linkerd_deployment_container_env_variables = [
+        {
+            name  = "LINKERD2_PROXY_LOG"
+            value = "warn,linkerd=info"
+        },
+        {
+            name  = "LINKERD2_PROXY_DESTINATION_GET_NETWORKS"
+            value = "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+        },
+        {
+            name  = "LINKERD2_PROXY_CONTROL_LISTEN_ADDR"
+            value = "0.0.0.0:${local.linkerd_deployment_proxy_control_port}"
+        },
+        {
+            name  = "LINKERD2_PROXY_ADMIN_LISTEN_ADDR"
+            value = "0.0.0.0:${local.linkerd_deployment_admin_port}"
+        },
+        {
+            name  = "LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR"
+            value = "127.0.0.1:${local.linkerd_deployment_outgoing_proxy_port}"
+        },
+        {
+            name  = "LINKERD2_PROXY_INBOUND_LISTEN_ADDR"
+            value = "0.0.0.0:${local.linkerd_deployment_incoming_proxy_port}"
+        },
+        {
+            name  = "LINKERD2_PROXY_DESTINATION_GET_SUFFIXES"
+            value = "svc.cluster.local."
+        },
+        {
+            name  = "LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES"
+            value = "svc.cluster.local."
+        },
+        {
+            name  = "LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE"
+            value = "10000ms"
+        },
+        {
+            name  = "LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE"
+            value = "10000ms"
+        },
+        {
+            name  = "LINKERD2_PROXY_DESTINATION_CONTEXT"
+            value = "ns:$(_pod_ns)"
+        },
+        {
+            name  = "LINKERD2_PROXY_IDENTITY_DIR"
+            value = "/var/run/linkerd/identity/end-entity"
+        },
+        {
+            name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
+            value = file("${path.module}/certs/proxy_trust_anchor.pem")
+        },
+        {
+            name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"
+            value = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        },
+        {
+            name  = "_l5d_ns"
+            value = "linkerd"
+        },
+        {
+            name  = "_l5d_trustdomain"
+            value = "cluster.local"
+        },
+        {
+            name  = "LINKERD2_PROXY_IDENTITY_LOCAL_NAME"
+            value = "$(_pod_sa).$(_pod_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
+        },
+        {
+            name  = "LINKERD2_PROXY_IDENTITY_SVC_NAME"
+            value = "linkerd-identity.$(_l5d_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
+        },
+        {
+            name  = "LINKERD2_PROXY_DESTINATION_SVC_NAME"
+            value = "linkerd-destination.$(_l5d_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
+        },
+        {
+            name  = "LINKERD2_PROXY_TAP_SVC_NAME"
+            value = "linkerd-tap.$(_l5d_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
+        }
+    ]     
+
 }

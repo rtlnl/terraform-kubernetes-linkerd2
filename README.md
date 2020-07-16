@@ -57,6 +57,24 @@ linkerd uninstall | kubectl delete -f -
 
 ## Plan
 
+To run a terraform plan you can perform the following:
+
+- Run a simple tf plan
+```bash
+terraform plan
+```
+
+- Run tf plan and save in tfplan file
+```bash
+terraform plan -out=terraform.tfplan
+```
+
+- In cases where you want to inspect the output of the plan
+```bash
+terraform plan -out=terraform.tfplan && \
+terraform show -json terraform.tfplan > plan.json
+```
+
 ### High Availability Mode
 There is a boolean variable `high_availability` that needs to be set, to switch on high availability in the cluster, this controls when to apply various pod/node affinities defined in the linkerd deployments.
 

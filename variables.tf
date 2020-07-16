@@ -5,7 +5,7 @@ variable "automount_service_account_token" {
 }
 
 variable "high_availability" {
-    type = bool
-    description = "Enable high availability"
-    # default = false UNCOMMENT THIS AND SET TO TRUE FOR PROD
+  type = bool
+  description = "Enable high availability"
+  # default = false UNCOMMENT THIS AND SET TO TRUE FOR PROD
 }

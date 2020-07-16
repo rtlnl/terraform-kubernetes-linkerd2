@@ -310,63 +310,35 @@ resource "kubernetes_deployment" "linkerd_web" {
           }
           image_pull_policy = "IfNotPresent"
           security_context {
-            run_as_user = 2103
+            run_as_user = local.linkerd_deployment_security_context_user
           }
         }
         container {
           name  = "linkerd-proxy"
           image = local.linkerd_deployment_proxy_image
           port {
-            name           = "linkerd-proxy"
+            name           = local.linkerd_deployment_proxy_port_name
             container_port = local.linkerd_deployment_incoming_proxy_port
           }
           port {
-            name           = "linkerd-admin"
+            name           = local.linkerd_deployment_admin_port_name
             container_port = local.linkerd_deployment_admin_port
           }
-          env {
-            name  = "LINKERD2_PROXY_LOG"
-            value = "warn,linkerd=info"
+          dynamic "env" {
+            for_each = local.linkerd_deployment_container_env_variables
+
+            content {
+              name = env.value["name"]
+              value = env.value["value"]
+            }
           }
           env {
             name  = "LINKERD2_PROXY_DESTINATION_SVC_ADDR"
             value = "linkerd-dst.linkerd.svc.cluster.local:8086"
           }
           env {
-            name  = "LINKERD2_PROXY_DESTINATION_GET_NETWORKS"
-            value = "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
-          }
-          env {
-            name  = "LINKERD2_PROXY_CONTROL_LISTEN_ADDR"
-            value = "0.0.0.0:${local.linkerd_deployment_proxy_control_port}"
-          }
-          env {
-            name  = "LINKERD2_PROXY_ADMIN_LISTEN_ADDR"
-            value = "0.0.0.0:4191"
-          }
-          env {
-            name  = "LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR"
-            value = "127.0.0.1:4140"
-          }
-          env {
-            name  = "LINKERD2_PROXY_INBOUND_LISTEN_ADDR"
-            value = "0.0.0.0:4143"
-          }
-          env {
-            name  = "LINKERD2_PROXY_DESTINATION_GET_SUFFIXES"
-            value = "svc.cluster.local."
-          }
-          env {
-            name  = "LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES"
-            value = "svc.cluster.local."
-          }
-          env {
-            name  = "LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE"
-            value = "10000ms"
-          }
-          env {
-            name  = "LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE"
-            value = "10000ms"
+            name  = "LINKERD2_PROXY_IDENTITY_SVC_ADDR"
+            value = "linkerd-identity.linkerd.svc.cluster.local:8080"
           }
           env {
             name = "_pod_ns"
@@ -377,56 +349,12 @@ resource "kubernetes_deployment" "linkerd_web" {
             }
           }
           env {
-            name  = "LINKERD2_PROXY_DESTINATION_CONTEXT"
-            value = "ns:$(_pod_ns)"
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_DIR"
-            value = "/var/run/linkerd/identity/end-entity"
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = file("${path.module}/certs/proxy_trust_anchor.pem")
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"
-            value = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_SVC_ADDR"
-            value = "linkerd-identity.linkerd.svc.cluster.local:8080"
-          }
-          env {
             name = "_pod_sa"
             value_from {
               field_ref {
                 field_path = "spec.serviceAccountName"
               }
             }
-          }
-          env {
-            name  = "_l5d_ns"
-            value = "linkerd"
-          }
-          env {
-            name  = "_l5d_trustdomain"
-            value = "cluster.local"
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_LOCAL_NAME"
-            value = "$(_pod_sa).$(_pod_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_SVC_NAME"
-            value = "linkerd-identity.$(_l5d_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
-          }
-          env {
-            name  = "LINKERD2_PROXY_DESTINATION_SVC_NAME"
-            value = "linkerd-destination.$(_l5d_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
-          }
-          env {
-            name  = "LINKERD2_PROXY_TAP_SVC_NAME"
-            value = "linkerd-tap.$(_l5d_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
           }
           resources {
             limits {

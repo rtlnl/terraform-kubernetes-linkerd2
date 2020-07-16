@@ -96,7 +96,7 @@ resource "kubernetes_cron_job" "linkerd_heartbeat" {
               }
               image_pull_policy = "IfNotPresent"
               security_context {
-                run_as_user = 2103
+                run_as_user = local.linkerd_deployment_security_context_user
               }
             }
             restart_policy = "Never"
