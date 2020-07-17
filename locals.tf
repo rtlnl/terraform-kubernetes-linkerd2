@@ -14,6 +14,9 @@ locals {
     linkerd_component_tap_name = "tap"
     linkerd_component_web_name = "web"
 
+    # container names
+    linkerd_init_container_name = "linkerd-init"
+    linkerd_proxy_container_name = "linkerd-proxy"
     linkerd_controller_name = "linkerd-controller"
     linkerd_destination_name = "linkerd-destination"
     linkerd_grafana_name = "linkerd-grafana"
@@ -158,5 +161,4 @@ locals {
 
     #log level
     linkerd_container_log_level = "info"
-
 }

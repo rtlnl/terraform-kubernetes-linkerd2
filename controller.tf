@@ -195,7 +195,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
         }
         automount_service_account_token = var.automount_service_account_token
         init_container {
-          name  = "linkerd-init"
+          name  = local.linkerd_init_container_name
           image =  local.linkerd_deployment_proxy_init_image
           args = [
             "--incoming-proxy-port",
@@ -279,7 +279,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
           }
         }
         container {
-          name  = "linkerd-proxy"
+          name  = local.linkerd_proxy_container_name
           image = local.linkerd_deployment_proxy_image
           port {
             name           = local.linkerd_deployment_proxy_port_name
@@ -335,7 +335,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
           }
           image_pull_policy = "IfNotPresent"
           security_context {
-            run_as_user               = 2102
+            run_as_user               = local.linkerd_deployment_proxy_uid
             read_only_root_filesystem = true
           }
         }

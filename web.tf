@@ -230,7 +230,7 @@ resource "kubernetes_deployment" "linkerd_web" {
         }
         automount_service_account_token = var.automount_service_account_token
         init_container {
-          name  = "linkerd-init"
+          name  = local.linkerd_init_container_name
           image =  local.linkerd_deployment_proxy_init_image
           args = [
             "--incoming-proxy-port",
@@ -240,7 +240,7 @@ resource "kubernetes_deployment" "linkerd_web" {
             "--proxy-uid",
             "${local.linkerd_deployment_proxy_uid}",
             "--inbound-ports-to-ignore",
-            "${local.linkerd_deployment_proxy_control_port},4191",
+            "${local.linkerd_deployment_proxy_control_port},${local.linkerd_deployment_admin_port}",
             "--outbound-ports-to-ignore",
             "${local.linkerd_deployment_outbound_port}"
           ]
@@ -314,7 +314,7 @@ resource "kubernetes_deployment" "linkerd_web" {
           }
         }
         container {
-          name  = "linkerd-proxy"
+          name  = local.linkerd_proxy_container_name
           image = local.linkerd_deployment_proxy_image
           port {
             name           = local.linkerd_deployment_proxy_port_name
@@ -373,20 +373,20 @@ resource "kubernetes_deployment" "linkerd_web" {
           liveness_probe {
             http_get {
               path = "/live"
-              port = "4191"
+              port = local.linkerd_deployment_admin_port
             }
             initial_delay_seconds = 10
           }
           readiness_probe {
             http_get {
               path = "/ready"
-              port = "4191"
+              port = local.linkerd_deployment_admin_port
             }
             initial_delay_seconds = 2
           }
           image_pull_policy = "IfNotPresent"
           security_context {
-            run_as_user               = 2102
+            run_as_user               = local.linkerd_deployment_proxy_uid
             read_only_root_filesystem = true
           }
         }
