@@ -81,8 +81,8 @@ resource "kubernetes_cron_job" "linkerd_heartbeat" {
               args = [
                 local.linkerd_component_heartbeat_name,
                 "-prometheus-url=http://linkerd-prometheus.linkerd.svc.cluster.local:9090",
-                "-controller-namespace=linkerd",
-                "-log-level=info"
+                "-controller-namespace=${local.linkerd_namespace}",
+                "-log-level=${local.linkerd_container_log_level}"
               ]
               resources {
                 limits {

@@ -182,9 +182,9 @@ resource "kubernetes_deployment" "linkerd_destination" {
           args = [
             local.linkerd_component_destination_name,
             "-addr=:8086",
-            "-controller-namespace=linkerd",
+            "-controller-namespace=${local.linkerd_namespace}",
             "-enable-h2-upgrade=true",
-            "-log-level=info"
+            "-log-level=${local.linkerd_container_log_level}"
           ]
           port {
             name           = "grpc"
@@ -252,7 +252,7 @@ resource "kubernetes_deployment" "linkerd_destination" {
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_SVC_ADDR"
-            value = "linkerd-identity.linkerd.svc.cluster.local:8080"
+            value = local.linkerd_proxy_identity_svc_addr
           }
           resources {
             limits {

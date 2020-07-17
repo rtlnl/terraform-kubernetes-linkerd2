@@ -151,6 +151,12 @@ locals {
             name  = "LINKERD2_PROXY_TAP_SVC_NAME"
             value = "linkerd-tap.$(_l5d_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
         }
-    ]     
+    ]
+
+    linkerd_proxy_destination_svc_addr = "linkerd-dst.linkerd.svc.cluster.local:8086"
+    linkerd_proxy_identity_svc_addr = "linkerd-identity.linkerd.svc.cluster.local:8080"
+
+    #log level
+    linkerd_container_log_level = "info"
 
 }

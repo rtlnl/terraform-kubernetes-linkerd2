@@ -270,7 +270,7 @@ resource "kubernetes_deployment" "linkerd_tap" {
         container {
           name  = local.linkerd_component_tap_name
           image =  local.linkerd_deployment_controller_image
-          args  = [local.linkerd_component_tap_name, "-controller-namespace=linkerd", "-log-level=info"]
+          args  = [local.linkerd_component_tap_name, "-controller-namespace=${local.linkerd_namespace}", "-log-level=${local.linkerd_container_log_level}"]
           port {
             name           = "grpc"
             container_port = 8088
@@ -342,11 +342,11 @@ resource "kubernetes_deployment" "linkerd_tap" {
           }
           env {
             name  = "LINKERD2_PROXY_DESTINATION_SVC_ADDR"
-            value = "linkerd-dst.linkerd.svc.cluster.local:8086"
+            value = local.linkerd_proxy_destination_svc_addr
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_SVC_ADDR"
-            value = "linkerd-identity.linkerd.svc.cluster.local:8080"
+            value = local.linkerd_proxy_identity_svc_addr
           }
           resources {
             limits {

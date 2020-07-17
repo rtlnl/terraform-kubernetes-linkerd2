@@ -268,8 +268,8 @@ resource "kubernetes_deployment" "linkerd_web" {
           args = [
             "-api-addr=linkerd-controller-api.linkerd.svc.cluster.local:8085",
             "-grafana-addr=linkerd-grafana.linkerd.svc.cluster.local:3000",
-            "-controller-namespace=linkerd",
-            "-log-level=info",
+            "-controller-namespace=${local.linkerd_namespace}",
+            "-log-level=${local.linkerd_container_log_level}",
             "-enforced-host=^(localhost|127\\.0\\.0\\.1|linkerd-web\\.linkerd\\.svc\\.cluster\\.local|linkerd-web\\.linkerd\\.svc|\\[::1\\])(:\\d+)?$"
           ]
           port {
@@ -334,11 +334,11 @@ resource "kubernetes_deployment" "linkerd_web" {
           }
           env {
             name  = "LINKERD2_PROXY_DESTINATION_SVC_ADDR"
-            value = "linkerd-dst.linkerd.svc.cluster.local:8086"
+            value = local.linkerd_proxy_destination_svc_addr
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_SVC_ADDR"
-            value = "linkerd-identity.linkerd.svc.cluster.local:8080"
+            value = local.linkerd_proxy_identity_svc_addr
           }
           env {
             name = "_pod_ns"

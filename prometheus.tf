@@ -251,7 +251,7 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
           }
           env {
             name  = "LINKERD2_PROXY_DESTINATION_SVC_ADDR"
-            value = "linkerd-dst.linkerd.svc.cluster.local:8086"
+            value = local.linkerd_proxy_destination_svc_addr
           }
           env {
             name  = "LINKERD2_PROXY_OUTBOUND_ROUTER_CAPACITY"
@@ -259,7 +259,7 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_SVC_ADDR"
-            value = "linkerd-identity.linkerd.svc.cluster.local:8080"
+            value = local.linkerd_proxy_identity_svc_addr
           }
           resources {
             limits {

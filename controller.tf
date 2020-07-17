@@ -233,9 +233,9 @@ resource "kubernetes_deployment" "linkerd_controller" {
           args = [
             "public-api",
             "-prometheus-url=http://linkerd-prometheus.linkerd.svc.cluster.local:9090",
-            "-destination-addr=linkerd-dst.linkerd.svc.cluster.local:8086",
-            "-controller-namespace=linkerd",
-            "-log-level=info"
+            "-destination-addr=${local.linkerd_proxy_destination_svc_addr}",
+            "-controller-namespace=${local.linkerd_namespace}",
+            "-log-level=${local.linkerd_container_log_level}"
           ]
           port {
             name           = "http"
@@ -299,11 +299,11 @@ resource "kubernetes_deployment" "linkerd_controller" {
           }
           env {
             name  = "LINKERD2_PROXY_DESTINATION_SVC_ADDR"
-            value = "linkerd-dst.linkerd.svc.cluster.local:8086"
+            value = local.linkerd_proxy_destination_svc_addr
           }
           env {
             name  = "LINKERD2_PROXY_IDENTITY_SVC_ADDR"
-            value = "linkerd-identity.linkerd.svc.cluster.local:8080"
+            value = local.linkerd_proxy_identity_svc_addr
           }
           resources {
             limits {
