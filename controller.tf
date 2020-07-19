@@ -1,4 +1,6 @@
 resource "kubernetes_role" "linkerd_psp" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name      = "linkerd-psp"
     namespace = local.linkerd_namespace
@@ -13,6 +15,8 @@ resource "kubernetes_role" "linkerd_psp" {
 }
 
 resource "kubernetes_role_binding" "linkerd_psp" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name      = "linkerd-psp"
     namespace = local.linkerd_namespace
@@ -76,6 +80,8 @@ resource "kubernetes_role_binding" "linkerd_psp" {
 }
 
 resource "kubernetes_cluster_role" "linkerd_controller" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name = "linkerd-linkerd-controller"
     labels = merge(local.linkerd_label_control_plane_ns, {
@@ -110,6 +116,8 @@ resource "kubernetes_cluster_role" "linkerd_controller" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_controller" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name = "linkerd-linkerd-controller"
     labels = merge(local.linkerd_label_control_plane_ns, {
@@ -129,6 +137,8 @@ resource "kubernetes_cluster_role_binding" "linkerd_controller" {
 }
 
 resource "kubernetes_service_account" "linkerd_controller" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name      = local.linkerd_controller_name
     namespace = local.linkerd_namespace
@@ -140,11 +150,13 @@ resource "kubernetes_service_account" "linkerd_controller" {
 
 resource "kubernetes_deployment" "linkerd_controller" {
   depends_on = [
+    kubernetes_namespace.linkerd,
     kubernetes_cluster_role.linkerd_controller,
     kubernetes_cluster_role_binding.linkerd_controller,
     kubernetes_service_account.linkerd_controller,
     kubernetes_role.linkerd_psp,
-    kubernetes_role_binding.linkerd_psp
+    kubernetes_role_binding.linkerd_psp,
+    kubernetes_deployment.linkerd_identity
   ]
 
   metadata {
@@ -289,6 +301,22 @@ resource "kubernetes_deployment" "linkerd_controller" {
             name           = local.linkerd_deployment_admin_port_name
             container_port = local.linkerd_deployment_admin_port
           }
+          env {
+            name = "_pod_ns"
+            value_from {
+              field_ref {
+                field_path = "metadata.namespace"
+              }
+            }
+          }
+          env {
+            name = "_pod_sa"
+            value_from {
+              field_ref {
+                field_path = "spec.serviceAccountName"
+              }
+            }
+          }
           dynamic "env" {
             for_each = local.linkerd_deployment_container_env_variables
 
@@ -384,6 +412,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
 
 resource "kubernetes_service" "linkerd_controller_api" {
   depends_on = [
+    kubernetes_namespace.linkerd,
     kubernetes_cluster_role.linkerd_controller,
     kubernetes_cluster_role_binding.linkerd_controller,
     kubernetes_service_account.linkerd_controller,

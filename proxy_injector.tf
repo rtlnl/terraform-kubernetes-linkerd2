@@ -1,4 +1,6 @@
 resource "kubernetes_cluster_role" "linkerd_proxy_injector" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name = "linkerd-linkerd-proxy-injector"
     labels = merge(local.linkerd_label_control_plane_ns, {
@@ -33,6 +35,8 @@ resource "kubernetes_cluster_role" "linkerd_proxy_injector" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_proxy_injector" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name = "linkerd-linkerd-proxy-injector"
     labels = merge(local.linkerd_label_control_plane_ns, {
@@ -52,6 +56,8 @@ resource "kubernetes_cluster_role_binding" "linkerd_proxy_injector" {
 }
 
 resource "kubernetes_service_account" "linkerd_proxy_injector" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name      = local.linkerd_proxy_injector_name
     namespace = local.linkerd_namespace
@@ -63,6 +69,7 @@ resource "kubernetes_service_account" "linkerd_proxy_injector" {
 
 resource "kubernetes_service" "linkerd_proxy_injector" {
   depends_on = [
+    kubernetes_namespace.linkerd,
     kubernetes_cluster_role.linkerd_proxy_injector,
     kubernetes_cluster_role_binding.linkerd_proxy_injector,
     kubernetes_service_account.linkerd_proxy_injector
@@ -91,9 +98,11 @@ resource "kubernetes_service" "linkerd_proxy_injector" {
 
 resource "kubernetes_deployment" "linkerd_proxy_injector" {
   depends_on = [
+    kubernetes_namespace.linkerd,
     kubernetes_cluster_role.linkerd_proxy_injector,
     kubernetes_cluster_role_binding.linkerd_proxy_injector,
-    kubernetes_service_account.linkerd_proxy_injector
+    kubernetes_service_account.linkerd_proxy_injector,
+    kubernetes_deployment.linkerd_identity
   ]
 
   metadata {
@@ -241,6 +250,22 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
           port {
             name           = local.linkerd_deployment_admin_port_name
             container_port = local.linkerd_deployment_admin_port
+          }
+          env {
+            name = "_pod_ns"
+            value_from {
+              field_ref {
+                field_path = "metadata.namespace"
+              }
+            }
+          }
+          env {
+            name = "_pod_sa"
+            value_from {
+              field_ref {
+                field_path = "spec.serviceAccountName"
+              }
+            }
           }
           dynamic "env" {
             for_each = local.linkerd_deployment_container_env_variables

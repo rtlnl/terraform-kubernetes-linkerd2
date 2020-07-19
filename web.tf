@@ -1,4 +1,6 @@
 resource "kubernetes_role" "linkerd_web" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
@@ -30,6 +32,8 @@ resource "kubernetes_role" "linkerd_web" {
 }
 
 resource "kubernetes_role_binding" "linkerd_web" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
@@ -50,6 +54,8 @@ resource "kubernetes_role_binding" "linkerd_web" {
 }
 
 resource "kubernetes_cluster_role" "linkerd_web_check" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name = "linkerd-linkerd-web-check"
     labels = merge(local.linkerd_label_control_plane_ns, {
@@ -89,6 +95,8 @@ resource "kubernetes_cluster_role" "linkerd_web_check" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_web_check" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name = "linkerd-linkerd-web-check"
     labels = merge(local.linkerd_label_control_plane_ns, {
@@ -108,6 +116,8 @@ resource "kubernetes_cluster_role_binding" "linkerd_web_check" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_linkerd_web_admin" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name = "linkerd-linkerd-web-admin"
     labels = merge(local.linkerd_label_control_plane_ns, {
@@ -138,6 +148,7 @@ resource "kubernetes_service_account" "linkerd_web" {
 
 resource "kubernetes_service" "linkerd_web" {
   depends_on = [
+    kubernetes_namespace.linkerd,
     kubernetes_role.linkerd_web,
     kubernetes_role_binding.linkerd_web,
     kubernetes_cluster_role.linkerd_web_check,
@@ -174,12 +185,14 @@ resource "kubernetes_service" "linkerd_web" {
 
 resource "kubernetes_deployment" "linkerd_web" {
   depends_on = [
+    kubernetes_namespace.linkerd,
     kubernetes_role.linkerd_web,
     kubernetes_role_binding.linkerd_web,
     kubernetes_cluster_role.linkerd_web_check,
     kubernetes_cluster_role_binding.linkerd_web_check,
     kubernetes_cluster_role_binding.linkerd_linkerd_web_admin,
-    kubernetes_service_account.linkerd_web
+    kubernetes_service_account.linkerd_web,
+    kubernetes_deployment.linkerd_identity
   ]
 
   metadata {
@@ -324,22 +337,6 @@ resource "kubernetes_deployment" "linkerd_web" {
             name           = local.linkerd_deployment_admin_port_name
             container_port = local.linkerd_deployment_admin_port
           }
-          dynamic "env" {
-            for_each = local.linkerd_deployment_container_env_variables
-
-            content {
-              name = env.value["name"]
-              value = env.value["value"]
-            }
-          }
-          env {
-            name  = "LINKERD2_PROXY_DESTINATION_SVC_ADDR"
-            value = local.linkerd_proxy_destination_svc_addr
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_SVC_ADDR"
-            value = local.linkerd_proxy_identity_svc_addr
-          }
           env {
             name = "_pod_ns"
             value_from {
@@ -355,6 +352,22 @@ resource "kubernetes_deployment" "linkerd_web" {
                 field_path = "spec.serviceAccountName"
               }
             }
+          }
+          dynamic "env" {
+            for_each = local.linkerd_deployment_container_env_variables
+
+            content {
+              name = env.value["name"]
+              value = env.value["value"]
+            }
+          }
+          env {
+            name  = "LINKERD2_PROXY_DESTINATION_SVC_ADDR"
+            value = local.linkerd_proxy_destination_svc_addr
+          }
+          env {
+            name  = "LINKERD2_PROXY_IDENTITY_SVC_ADDR"
+            value = local.linkerd_proxy_identity_svc_addr
           }
           resources {
             limits {

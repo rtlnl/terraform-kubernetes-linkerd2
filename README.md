@@ -1,4 +1,4 @@
-# Linkerd2 Terraform Module
+# Linkerd2 Terraform Module (WIP)
 
 Terraform module to deploy Linkerd2 on Kubernetes
 

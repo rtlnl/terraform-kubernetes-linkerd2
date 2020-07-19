@@ -160,5 +160,5 @@ locals {
     linkerd_proxy_identity_svc_addr = "linkerd-identity.linkerd.svc.cluster.local:8080"
 
     #log level
-    linkerd_container_log_level = "info"
+    linkerd_container_log_level = "debug" # TODO: change level to info before deploying to prod
 }

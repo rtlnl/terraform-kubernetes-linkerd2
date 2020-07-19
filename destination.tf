@@ -1,4 +1,6 @@
 resource "kubernetes_cluster_role" "linkerd_destination" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name = "linkerd-linkerd-destination"
     labels = merge(local.linkerd_label_control_plane_ns, {
@@ -33,6 +35,8 @@ resource "kubernetes_cluster_role" "linkerd_destination" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_destination" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name = "linkerd-linkerd-destination"
     labels = merge(local.linkerd_label_control_plane_ns, {
@@ -52,6 +56,8 @@ resource "kubernetes_cluster_role_binding" "linkerd_destination" {
 }
 
 resource "kubernetes_service_account" "linkerd_destination" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name      = local.linkerd_destination_name
     namespace = local.linkerd_namespace
@@ -91,9 +97,11 @@ resource "kubernetes_service" "linkerd_dst" {
 
 resource "kubernetes_deployment" "linkerd_destination" {
   depends_on = [
+    kubernetes_namespace.linkerd,
     kubernetes_cluster_role.linkerd_destination,
     kubernetes_cluster_role_binding.linkerd_destination,
-    kubernetes_service_account.linkerd_destination
+    kubernetes_service_account.linkerd_destination,
+    kubernetes_deployment.linkerd_identity
   ]
 
   metadata {
@@ -237,6 +245,22 @@ resource "kubernetes_deployment" "linkerd_destination" {
           port {
             name           = local.linkerd_deployment_admin_port_name
             container_port = local.linkerd_deployment_admin_port
+          }
+          env {
+            name = "_pod_ns"
+            value_from {
+              field_ref {
+                field_path = "metadata.namespace"
+              }
+            }
+          }
+          env {
+            name = "_pod_sa"
+            value_from {
+              field_ref {
+                field_path = "spec.serviceAccountName"
+              }
+            }
           }
           dynamic "env" {
             for_each = local.linkerd_deployment_container_env_variables

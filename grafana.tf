@@ -1,4 +1,6 @@
 resource "kubernetes_service_account" "linkerd_grafana" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name      = local.linkerd_grafana_name
     namespace = local.linkerd_namespace
@@ -10,7 +12,10 @@ resource "kubernetes_service_account" "linkerd_grafana" {
 
 resource "kubernetes_config_map" "linkerd_grafana_config" {
 
-  depends_on = [kubernetes_service_account.linkerd_grafana]
+  depends_on = [
+    kubernetes_namespace.linkerd,
+    kubernetes_service_account.linkerd_grafana
+  ]
 
   metadata {
     name      = "linkerd-grafana-config"
@@ -28,7 +33,10 @@ resource "kubernetes_config_map" "linkerd_grafana_config" {
 }
 
 resource "kubernetes_service" "linkerd_grafana" {
-  depends_on = [kubernetes_config_map.linkerd_grafana_config]
+  depends_on = [
+    kubernetes_namespace.linkerd,
+    kubernetes_config_map.linkerd_grafana_config
+  ]
 
   metadata {
     name      = local.linkerd_grafana_name
@@ -52,7 +60,11 @@ resource "kubernetes_service" "linkerd_grafana" {
 }
 
 resource "kubernetes_deployment" "linkerd_grafana" {
-  depends_on = [kubernetes_config_map.linkerd_grafana_config]
+  depends_on = [
+    kubernetes_namespace.linkerd,
+    kubernetes_config_map.linkerd_grafana_config,
+    kubernetes_deployment.linkerd_identity
+  ]
 
   metadata {
     name      = local.linkerd_grafana_name
@@ -211,6 +223,22 @@ resource "kubernetes_deployment" "linkerd_grafana" {
           port {
             name           = local.linkerd_deployment_admin_port_name
             container_port = local.linkerd_deployment_admin_port
+          }
+          env {
+            name = "_pod_ns"
+            value_from {
+              field_ref {
+                field_path = "metadata.namespace"
+              }
+            }
+          }
+          env {
+            name = "_pod_sa"
+            value_from {
+              field_ref {
+                field_path = "spec.serviceAccountName"
+              }
+            }
           }
           dynamic "env" {
             for_each = local.linkerd_deployment_container_env_variables
