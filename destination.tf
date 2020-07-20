@@ -1,10 +1,11 @@
 resource "kubernetes_cluster_role" "linkerd_destination" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name = "linkerd-linkerd-destination"
-    labels = {
-      "linkerd.io/control-plane-component" = "destination",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
+    })
   }
   rule {
     verbs      = ["list", "get", "watch"]
@@ -34,17 +35,18 @@ resource "kubernetes_cluster_role" "linkerd_destination" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_destination" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
     name = "linkerd-linkerd-destination"
-    labels = {
-      "linkerd.io/control-plane-component" = "destination",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    labels = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
+    })
   }
   subject {
     kind      = "ServiceAccount"
-    name      = "linkerd-destination"
-    namespace = "linkerd"
+    name      = local.linkerd_destination_name
+    namespace = local.linkerd_namespace
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
@@ -54,13 +56,14 @@ resource "kubernetes_cluster_role_binding" "linkerd_destination" {
 }
 
 resource "kubernetes_service_account" "linkerd_destination" {
+  depends_on = [kubernetes_namespace.linkerd]
+
   metadata {
-    name      = "linkerd-destination"
-    namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "destination",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
+    name      = local.linkerd_destination_name
+    namespace = local.linkerd_namespace
+    labels    = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
+    })
   }
 }
 
@@ -73,14 +76,11 @@ resource "kubernetes_service" "linkerd_dst" {
 
   metadata {
     name      = "linkerd-dst"
-    namespace = "linkerd"
-    labels = {
-      "linkerd.io/control-plane-component" = "destination",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
+    namespace = local.linkerd_namespace
+    labels    = merge(local.linkerd_label_control_plane_ns, {
+      "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
+    })
+    annotations = local.linkerd_annotation_created_by
   }
   spec {
     type = "ClusterIP"
@@ -90,54 +90,52 @@ resource "kubernetes_service" "linkerd_dst" {
       target_port = "8086"
     }
     selector = {
-      "linkerd.io/control-plane-component" = "destination"
+      "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
     }
   }
 }
 
 resource "kubernetes_deployment" "linkerd_destination" {
   depends_on = [
+    kubernetes_namespace.linkerd,
     kubernetes_cluster_role.linkerd_destination,
     kubernetes_cluster_role_binding.linkerd_destination,
-    kubernetes_service_account.linkerd_destination
+    kubernetes_service_account.linkerd_destination,
+    kubernetes_deployment.linkerd_identity
   ]
 
   metadata {
-    name      = "linkerd-destination"
-    namespace = "linkerd"
-    labels = {
-      "app.kubernetes.io/name"             = "destination",
-      "app.kubernetes.io/part-of"          = "Linkerd",
-      "app.kubernetes.io/version"          = "stable-2.8.1",
-      "linkerd.io/control-plane-component" = "destination",
-      "linkerd.io/control-plane-ns"        = "linkerd"
-    }
-    annotations = {
-      "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
-    }
+    name      = local.linkerd_destination_name
+    namespace = local.linkerd_namespace
+    labels    = merge(
+      local.linkerd_label_control_plane_ns,
+      local.linkerd_label_partof_version,
+      {
+        "app.kubernetes.io/name"             = local.linkerd_component_destination_name,
+        "linkerd.io/control-plane-component" = local.linkerd_component_destination_name
+      }
+    )
+    annotations = local.linkerd_annotation_created_by
   }
   spec {
-    replicas = 3
+    replicas = 1
     selector {
-      match_labels = {
-        "linkerd.io/control-plane-component" = "destination",
-        "linkerd.io/control-plane-ns"        = "linkerd",
-        "linkerd.io/proxy-deployment"        = "linkerd-destination"
-      }
+      match_labels = merge(local.linkerd_label_control_plane_ns, {
+        "linkerd.io/control-plane-component" = local.linkerd_component_destination_name,
+        "linkerd.io/proxy-deployment"        = local.linkerd_destination_name
+      })
     }
     template {
       metadata {
-        labels = {
-          "linkerd.io/control-plane-component" = "destination",
-          "linkerd.io/control-plane-ns"        = "linkerd",
-          "linkerd.io/proxy-deployment"        = "linkerd-destination",
-          "linkerd.io/workload-ns"             = "linkerd"
-        }
-        annotations = {
-          "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
-          "linkerd.io/identity-mode" = "default",
-          "linkerd.io/proxy-version" = "stable-2.8.1"
-        }
+        labels = merge(
+          local.linkerd_label_control_plane_ns,
+          local.linkerd_label_workload_ns,
+          {
+            "linkerd.io/control-plane-component" = local.linkerd_component_destination_name,
+            "linkerd.io/proxy-deployment"        = local.linkerd_destination_name
+          }
+        )
+        annotations = local.linkerd_annotations_for_deployment
       }
       spec {
         volume {
@@ -152,20 +150,21 @@ resource "kubernetes_deployment" "linkerd_destination" {
             medium = "Memory"
           }
         }
+        automount_service_account_token = var.automount_service_account_token
         init_container {
-          name  = "linkerd-init"
-          image = "gcr.io/linkerd-io/proxy-init:v1.3.3"
+          name  = local.linkerd_init_container_name
+          image =  local.linkerd_deployment_proxy_init_image
           args = [
             "--incoming-proxy-port",
-            "4143",
+            "${local.linkerd_deployment_incoming_proxy_port}",
             "--outgoing-proxy-port",
-            "4140",
+            "${local.linkerd_deployment_outgoing_proxy_port}",
             "--proxy-uid",
-            "2102",
+            "${local.linkerd_deployment_proxy_uid}",
             "--inbound-ports-to-ignore",
-            "4190,4191",
+            "${local.linkerd_deployment_proxy_control_port},${local.linkerd_deployment_admin_port}",
             "--outbound-ports-to-ignore",
-            "443"
+            "${local.linkerd_deployment_outbound_port}"
           ]
           resources {
             limits {
@@ -186,14 +185,14 @@ resource "kubernetes_deployment" "linkerd_destination" {
           }
         }
         container {
-          name  = "destination"
-          image = "gcr.io/linkerd-io/controller:stable-2.8.1"
+          name  = local.linkerd_component_destination_name
+          image =  local.linkerd_deployment_controller_image
           args = [
-            "destination",
+            local.linkerd_component_destination_name,
             "-addr=:8086",
-            "-controller-namespace=linkerd",
+            "-controller-namespace=${local.linkerd_namespace}",
             "-enable-h2-upgrade=true",
-            "-log-level=info"
+            "-log-level=${local.linkerd_container_log_level}"
           ]
           port {
             name           = "grpc"
@@ -233,63 +232,19 @@ resource "kubernetes_deployment" "linkerd_destination" {
           }
           image_pull_policy = "IfNotPresent"
           security_context {
-            run_as_user = 2103
+            run_as_user = local.linkerd_deployment_security_context_user
           }
         }
         container {
-          name  = "linkerd-proxy"
-          image = "gcr.io/linkerd-io/proxy:stable-2.8.1"
+          name  = local.linkerd_proxy_container_name
+          image = local.linkerd_deployment_proxy_image
           port {
-            name           = "linkerd-proxy"
-            container_port = 4143
+            name           = local.linkerd_deployment_proxy_port_name
+            container_port = local.linkerd_deployment_incoming_proxy_port
           }
           port {
-            name           = "linkerd-admin"
-            container_port = 4191
-          }
-          env {
-            name  = "LINKERD2_PROXY_LOG"
-            value = "warn,linkerd=info"
-          }
-          env {
-            name  = "LINKERD2_PROXY_DESTINATION_SVC_ADDR"
-            value = "localhost.:8086"
-          }
-          env {
-            name  = "LINKERD2_PROXY_DESTINATION_GET_NETWORKS"
-            value = "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
-          }
-          env {
-            name  = "LINKERD2_PROXY_CONTROL_LISTEN_ADDR"
-            value = "0.0.0.0:4190"
-          }
-          env {
-            name  = "LINKERD2_PROXY_ADMIN_LISTEN_ADDR"
-            value = "0.0.0.0:4191"
-          }
-          env {
-            name  = "LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR"
-            value = "127.0.0.1:4140"
-          }
-          env {
-            name  = "LINKERD2_PROXY_INBOUND_LISTEN_ADDR"
-            value = "0.0.0.0:4143"
-          }
-          env {
-            name  = "LINKERD2_PROXY_DESTINATION_GET_SUFFIXES"
-            value = "svc.cluster.local."
-          }
-          env {
-            name  = "LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES"
-            value = "svc.cluster.local."
-          }
-          env {
-            name  = "LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE"
-            value = "10000ms"
-          }
-          env {
-            name  = "LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE"
-            value = "10000ms"
+            name           = local.linkerd_deployment_admin_port_name
+            container_port = local.linkerd_deployment_admin_port
           }
           env {
             name = "_pod_ns"
@@ -300,26 +255,6 @@ resource "kubernetes_deployment" "linkerd_destination" {
             }
           }
           env {
-            name  = "LINKERD2_PROXY_DESTINATION_CONTEXT"
-            value = "ns:$(_pod_ns)"
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_DIR"
-            value = "/var/run/linkerd/identity/end-entity"
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = "${file("${path.module}/certs/proxy_trust_anchor.cert")}"
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"
-            value = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_SVC_ADDR"
-            value = "linkerd-identity.linkerd.svc.cluster.local:8080"
-          }
-          env {
             name = "_pod_sa"
             value_from {
               field_ref {
@@ -327,29 +262,21 @@ resource "kubernetes_deployment" "linkerd_destination" {
               }
             }
           }
-          env {
-            name  = "_l5d_ns"
-            value = "linkerd"
+          dynamic "env" {
+            for_each = local.linkerd_deployment_container_env_variables
+
+            content {
+              name = env.value["name"]
+              value = env.value["value"]
+            }
           }
           env {
-            name  = "_l5d_trustdomain"
-            value = "cluster.local"
+            name  = "LINKERD2_PROXY_DESTINATION_SVC_ADDR"
+            value = "localhost.:8086"
           }
           env {
-            name  = "LINKERD2_PROXY_IDENTITY_LOCAL_NAME"
-            value = "$(_pod_sa).$(_pod_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
-          }
-          env {
-            name  = "LINKERD2_PROXY_IDENTITY_SVC_NAME"
-            value = "linkerd-identity.$(_l5d_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
-          }
-          env {
-            name  = "LINKERD2_PROXY_DESTINATION_SVC_NAME"
-            value = "linkerd-destination.$(_l5d_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
-          }
-          env {
-            name  = "LINKERD2_PROXY_TAP_SVC_NAME"
-            value = "linkerd-tap.$(_l5d_ns).serviceaccount.identity.$(_l5d_ns).$(_l5d_trustdomain)"
+            name  = "LINKERD2_PROXY_IDENTITY_SVC_ADDR"
+            value = local.linkerd_proxy_identity_svc_addr
           }
           resources {
             limits {
@@ -368,49 +295,53 @@ resource "kubernetes_deployment" "linkerd_destination" {
           liveness_probe {
             http_get {
               path = "/live"
-              port = "4191"
+              port = local.linkerd_deployment_admin_port
             }
             initial_delay_seconds = 10
           }
           readiness_probe {
             http_get {
               path = "/ready"
-              port = "4191"
+              port = local.linkerd_deployment_admin_port
             }
             initial_delay_seconds = 2
           }
           image_pull_policy = "IfNotPresent"
           security_context {
-            run_as_user               = 2102
+            run_as_user               = local.linkerd_deployment_proxy_uid
             read_only_root_filesystem = true
           }
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
-        service_account_name = "linkerd-destination"
-        affinity {
-          pod_anti_affinity {
-            required_during_scheduling_ignored_during_execution {
-              label_selector {
-                match_expressions {
-                  key      = "linkerd.io/control-plane-component"
-                  operator = "In"
-                  values   = ["destination"]
+        service_account_name = local.linkerd_destination_name
+        dynamic "affinity" {
+          for_each = var.high_availability == true ? [map("ha", true)] : []
+
+          content {
+            pod_anti_affinity {
+                required_during_scheduling_ignored_during_execution {
+                    label_selector {
+                    match_expressions {
+                        key      = "linkerd.io/control-plane-component"
+                        operator = "In"
+                        values   = [local.linkerd_component_destination_name]
+                    }
+                    }
+                    topology_key = "kubernetes.io/hostname"
                 }
-              }
-              topology_key = "kubernetes.io/hostname"
-            }
-            preferred_during_scheduling_ignored_during_execution {
-              weight = 100
-              pod_affinity_term {
-                label_selector {
-                  match_expressions {
-                    key      = "linkerd.io/control-plane-component"
-                    operator = "In"
-                    values   = ["destination"]
-                  }
+                preferred_during_scheduling_ignored_during_execution {
+                    weight = 100
+                    pod_affinity_term {
+                    label_selector {
+                        match_expressions {
+                        key      = "linkerd.io/control-plane-component"
+                        operator = "In"
+                        values   = [local.linkerd_component_destination_name]
+                        }
+                    }
+                    topology_key = "failure-domain.beta.kubernetes.io/zone"
+                    }
                 }
-                topology_key = "failure-domain.beta.kubernetes.io/zone"
-              }
             }
           }
         }
