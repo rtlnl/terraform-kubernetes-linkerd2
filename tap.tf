@@ -187,6 +187,9 @@ resource "kubernetes_service" "linkerd_tap" {
 resource "kubernetes_deployment" "linkerd_tap" {
   depends_on = [
     kubernetes_namespace.linkerd,
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
+    kubernetes_secret.linkerd_tap_tls,
     kubernetes_cluster_role.linkerd_linkerd_tap,
     kubernetes_cluster_role.linkerd_linkerd_tap_admin,
     kubernetes_cluster_role_binding.linkerd_linkerd_tap,

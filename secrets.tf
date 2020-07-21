@@ -1,25 +1,3 @@
-resource "tls_private_key" "linkerd_trust_anchor" {
-  algorithm   = "ECDSA"
-  ecdsa_curve = "P384"
-}
-
-resource "tls_self_signed_cert" "linkerd_trust_anchor" {
-  subject {
-    common_name = "identity.linkerd.cluster.local"
-  }
-
-  // 5 years
-  validity_period_hours = 43800
-  key_algorithm         = tls_private_key.linkerd_trust_anchor.algorithm
-  is_ca_certificate     = true
-  allowed_uses          = [
-    "cert_signing",
-    "crl_signing",
-  ]
-
-  private_key_pem = tls_private_key.linkerd_trust_anchor.private_key_pem
-}
-
 resource "kubernetes_secret" "linkerd_proxy_injector_tls" {
   metadata {
     name      = "linkerd-proxy-injector-tls"

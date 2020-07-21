@@ -99,6 +99,9 @@ resource "kubernetes_service" "linkerd_proxy_injector" {
 resource "kubernetes_deployment" "linkerd_proxy_injector" {
   depends_on = [
     kubernetes_namespace.linkerd,
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
+    kubernetes_secret.linkerd_proxy_injector_tls,
     kubernetes_cluster_role.linkerd_proxy_injector,
     kubernetes_cluster_role_binding.linkerd_proxy_injector,
     kubernetes_service_account.linkerd_proxy_injector,

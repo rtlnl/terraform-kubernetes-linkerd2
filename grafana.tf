@@ -62,6 +62,8 @@ resource "kubernetes_service" "linkerd_grafana" {
 resource "kubernetes_deployment" "linkerd_grafana" {
   depends_on = [
     kubernetes_namespace.linkerd,
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
     kubernetes_config_map.linkerd_grafana_config,
     kubernetes_deployment.linkerd_identity
   ]

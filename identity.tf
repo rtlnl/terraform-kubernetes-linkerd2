@@ -90,6 +90,9 @@ resource "kubernetes_deployment" "linkerd_identity" {
 
   depends_on = [
     kubernetes_namespace.linkerd,
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
+    kubernetes_secret.linkerd_identity_issuer,
     kubernetes_cluster_role.linkerd_identity,
     kubernetes_cluster_role_binding.linkerd_identity,
     kubernetes_service_account.linkerd_identity

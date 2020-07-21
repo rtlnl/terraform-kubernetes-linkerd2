@@ -98,6 +98,8 @@ resource "kubernetes_service" "linkerd_dst" {
 resource "kubernetes_deployment" "linkerd_destination" {
   depends_on = [
     kubernetes_namespace.linkerd,
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
     kubernetes_cluster_role.linkerd_destination,
     kubernetes_cluster_role_binding.linkerd_destination,
     kubernetes_service_account.linkerd_destination,

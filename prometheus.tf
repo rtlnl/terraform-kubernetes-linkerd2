@@ -101,6 +101,8 @@ resource "kubernetes_service" "linkerd_prometheus" {
 resource "kubernetes_deployment" "linkerd_prometheus" {
   depends_on = [
     kubernetes_namespace.linkerd,
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
     kubernetes_config_map.linkerd_prometheus_config,
     kubernetes_cluster_role.linkerd_prometheus,
     kubernetes_cluster_role_binding.linkerd_prometheus,

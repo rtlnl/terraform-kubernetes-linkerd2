@@ -151,6 +151,8 @@ resource "kubernetes_service_account" "linkerd_controller" {
 resource "kubernetes_deployment" "linkerd_controller" {
   depends_on = [
     kubernetes_namespace.linkerd,
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
     kubernetes_cluster_role.linkerd_controller,
     kubernetes_cluster_role_binding.linkerd_controller,
     kubernetes_service_account.linkerd_controller,

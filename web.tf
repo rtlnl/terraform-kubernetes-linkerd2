@@ -186,6 +186,8 @@ resource "kubernetes_service" "linkerd_web" {
 resource "kubernetes_deployment" "linkerd_web" {
   depends_on = [
     kubernetes_namespace.linkerd,
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
     kubernetes_role.linkerd_web,
     kubernetes_role_binding.linkerd_web,
     kubernetes_cluster_role.linkerd_web_check,
