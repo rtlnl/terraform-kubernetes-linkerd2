@@ -28,6 +28,12 @@ variable "high_availability" {
   default     = false
 }
 
+variable "external_identity_issuer" {
+  type        = bool
+  description = "Use true in Production! If left to false, it will use the certificates coming with this module. For more information: https://linkerd.io/2/tasks/automatically-rotating-control-plane-tls-credentials/"
+  default     = false  
+}
+
 variable "enable_web_ingress" {
   type        = bool
   description = "enable the ingress object for the web component"
