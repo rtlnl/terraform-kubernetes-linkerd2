@@ -25,5 +25,5 @@ variable "web_ingress_annotations" {
 variable "web_ingress_host" {
   type        = string
   description = "host name for the web component"
-  defualt     = ""
+  default     = ""
 }
