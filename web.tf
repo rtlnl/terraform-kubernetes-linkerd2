@@ -412,13 +412,8 @@ resource "kubernetes_deployment" "linkerd_web" {
   }
 }
 
-
 resource "kubernetes_ingress" "linkerd_dashboard_ingress" {
   count = var.enable_web_ingress ? 1 : 0
-  
-  depends_on = [
-    kubernetes_secret.linkerd_dashboard_ingress_auth
-  ]
 
   metadata {
     name      = "linkerd-dashboard-ingress"
