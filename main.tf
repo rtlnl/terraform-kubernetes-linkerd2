@@ -1,6 +1,10 @@
 resource "kubernetes_namespace" "linkerd" {
+  count = var.create_namespace ? 1 : 0
+  
+  depends_on = [var.module_depends_on]
+
   metadata {
-    name = "linkerd"
+    name = var.namespace_name
     labels = merge(local.linkerd_label_control_plane_ns, {
       "config.linkerd.io/admission-webhooks" = "disabled",
       "linkerd.io/is-control-plane"          = "true"

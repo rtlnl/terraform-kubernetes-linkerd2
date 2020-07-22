@@ -1,6 +1,6 @@
 locals {
     # namespaces
-    linkerd_namespace = "linkerd"
+    linkerd_namespace = var.namespace_name
 
     # component names
     linkerd_component_controller_name = "controller"
@@ -73,6 +73,7 @@ locals {
     linkerd_deployment_outbound_port = 433
 
     # deployment env variables
+    linkerd_trust_domain = var.trust_domain
     linkerd_deployment_container_env_variables = [
         {
             name  = "LINKERD2_PROXY_LOG"
@@ -100,11 +101,11 @@ locals {
         },
         {
             name  = "LINKERD2_PROXY_DESTINATION_GET_SUFFIXES"
-            value = "svc.cluster.local."
+            value = "svc.${local.linkerd_namespace}."
         },
         {
             name  = "LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES"
-            value = "svc.cluster.local."
+            value = "svc.${local.linkerd_namespace}."
         },
         {
             name  = "LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE"
@@ -132,11 +133,11 @@ locals {
         },
         {
             name  = "_l5d_ns"
-            value = "linkerd"
+            value = "${local.linkerd_namespace}"
         },
         {
             name  = "_l5d_trustdomain"
-            value = "cluster.local"
+            value = "${local.linkerd_trust_domain}"
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_LOCAL_NAME"
@@ -156,8 +157,8 @@ locals {
         }
     ]
 
-    linkerd_proxy_destination_svc_addr = "linkerd-dst.linkerd.svc.cluster.local:8086"
-    linkerd_proxy_identity_svc_addr = "linkerd-identity.linkerd.svc.cluster.local:8080"
+    linkerd_proxy_destination_svc_addr = "linkerd-dst.linkerd.svc.${local.linkerd_trust_domain}:8086"
+    linkerd_proxy_identity_svc_addr = "linkerd-identity.linkerd.svc.${local.linkerd_trust_domain}:8080"
 
     #log level
     linkerd_container_log_level = "debug" # TODO: change level to info before deploying to prod
