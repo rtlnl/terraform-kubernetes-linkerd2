@@ -16,7 +16,9 @@ resource "kubernetes_namespace" "linkerd" {
 }
 
 resource "kubernetes_config_map" "linkerd_config" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [
+    kubernetes_namespace.linkerd[0]
+  ]
 
   metadata {
     name      = "linkerd-config"
