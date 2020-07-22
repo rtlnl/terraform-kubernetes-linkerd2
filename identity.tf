@@ -1,5 +1,5 @@
 resource "kubernetes_cluster_role" "linkerd_identity" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-identity"
@@ -25,7 +25,7 @@ resource "kubernetes_cluster_role" "linkerd_identity" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_identity" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-identity"
@@ -46,7 +46,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_identity" {
 }
 
 resource "kubernetes_service_account" "linkerd_identity" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = local.linkerd_identity_name
@@ -59,7 +59,7 @@ resource "kubernetes_service_account" "linkerd_identity" {
 
 resource "kubernetes_service" "linkerd_identity" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_cluster_role.linkerd_identity,
     kubernetes_cluster_role_binding.linkerd_identity,
     kubernetes_service_account.linkerd_identity
@@ -89,7 +89,7 @@ resource "kubernetes_service" "linkerd_identity" {
 resource "kubernetes_deployment" "linkerd_identity" {
 
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_config_map.linkerd_config,
     kubernetes_config_map.linkerd_config_addons,
     kubernetes_secret.linkerd_identity_issuer,

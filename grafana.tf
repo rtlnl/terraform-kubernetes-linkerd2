@@ -1,5 +1,5 @@
 resource "kubernetes_service_account" "linkerd_grafana" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = local.linkerd_grafana_name
@@ -13,7 +13,7 @@ resource "kubernetes_service_account" "linkerd_grafana" {
 resource "kubernetes_config_map" "linkerd_grafana_config" {
 
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_service_account.linkerd_grafana
   ]
 
@@ -34,7 +34,7 @@ resource "kubernetes_config_map" "linkerd_grafana_config" {
 
 resource "kubernetes_service" "linkerd_grafana" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_config_map.linkerd_grafana_config
   ]
 
@@ -61,7 +61,7 @@ resource "kubernetes_service" "linkerd_grafana" {
 
 resource "kubernetes_deployment" "linkerd_grafana" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_config_map.linkerd_config,
     kubernetes_config_map.linkerd_config_addons,
     kubernetes_config_map.linkerd_grafana_config,

@@ -1,5 +1,5 @@
 resource "kubernetes_role" "linkerd_psp" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = "linkerd-psp"
@@ -15,7 +15,7 @@ resource "kubernetes_role" "linkerd_psp" {
 }
 
 resource "kubernetes_role_binding" "linkerd_psp" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = "linkerd-psp"
@@ -80,7 +80,7 @@ resource "kubernetes_role_binding" "linkerd_psp" {
 }
 
 resource "kubernetes_cluster_role" "linkerd_controller" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-controller"
@@ -116,7 +116,7 @@ resource "kubernetes_cluster_role" "linkerd_controller" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_controller" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-controller"
@@ -137,7 +137,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_controller" {
 }
 
 resource "kubernetes_service_account" "linkerd_controller" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = local.linkerd_controller_name
@@ -150,7 +150,7 @@ resource "kubernetes_service_account" "linkerd_controller" {
 
 resource "kubernetes_deployment" "linkerd_controller" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_config_map.linkerd_config,
     kubernetes_config_map.linkerd_config_addons,
     kubernetes_cluster_role.linkerd_controller,
@@ -414,7 +414,7 @@ resource "kubernetes_deployment" "linkerd_controller" {
 
 resource "kubernetes_service" "linkerd_controller_api" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_cluster_role.linkerd_controller,
     kubernetes_cluster_role_binding.linkerd_controller,
     kubernetes_service_account.linkerd_controller,

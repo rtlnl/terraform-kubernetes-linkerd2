@@ -1,5 +1,5 @@
 resource "kubernetes_role" "linkerd_web" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = local.linkerd_web_name
@@ -32,7 +32,7 @@ resource "kubernetes_role" "linkerd_web" {
 }
 
 resource "kubernetes_role_binding" "linkerd_web" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = local.linkerd_web_name
@@ -54,7 +54,7 @@ resource "kubernetes_role_binding" "linkerd_web" {
 }
 
 resource "kubernetes_cluster_role" "linkerd_web_check" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-web-check"
@@ -95,7 +95,7 @@ resource "kubernetes_cluster_role" "linkerd_web_check" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_web_check" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-web-check"
@@ -116,7 +116,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_web_check" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_linkerd_web_admin" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-web-admin"
@@ -148,7 +148,7 @@ resource "kubernetes_service_account" "linkerd_web" {
 
 resource "kubernetes_service" "linkerd_web" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_role.linkerd_web,
     kubernetes_role_binding.linkerd_web,
     kubernetes_cluster_role.linkerd_web_check,
@@ -185,7 +185,7 @@ resource "kubernetes_service" "linkerd_web" {
 
 resource "kubernetes_deployment" "linkerd_web" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_config_map.linkerd_config,
     kubernetes_config_map.linkerd_config_addons,
     kubernetes_role.linkerd_web,
