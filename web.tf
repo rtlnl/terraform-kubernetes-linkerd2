@@ -412,43 +412,30 @@ resource "kubernetes_deployment" "linkerd_web" {
   }
 }
 
-# resource "kubernetes_secret" "linkerd_dashboard_ingress_auth" {
-#   metadata {
-#     name      = "linkerd-dashboard-ingress-auth"
-#     namespace = local.linkerd_namespace
-#   }
-#   data = {
-#     auth = "admin:$apr1$n7Cu6gHl$E47ogf7CO8NRYjEjBOkWM.\n\n"
-#   }
-#   type = "Opaque"
-# }
 
-# resource "kubernetes_ingress" "linkerd_dashboard_ingress" {
-#   metadata {
-#     name      = "linkerd-dashboard-ingress"
-#     namespace = local.linkerd_namespace
-#     annotations = {
-#       "kubernetes.io/ingress.class"                       = "nginx"
-#       "nginx.ingress.kubernetes.io/auth-realm"            = "Authentication Required"
-#       "nginx.ingress.kubernetes.io/auth-secret"           = "linkerd-dashboard-ingress-auth"
-#       "nginx.ingress.kubernetes.io/auth-type"             = "basic"
-#       "nginx.ingress.kubernetes.io/configuration-snippet" = "proxy_set_header Origin \"\";\nproxy_hide_header l5d-remote-ip;\nproxy_hide_header l5d-server-id; \n"
-#       "nginx.ingress.kubernetes.io/ssl-passthrough"       = "true"
-#       "nginx.ingress.kubernetes.io/ssl-redirect"          = "false"
-#       "nginx.ingress.kubernetes.io/upstream-vhost"        = "$service_name.$namespace.svc.cluster.local:8084"
-#     }
-#   }
-#   spec {
-#     rule {
-#       host = "linkerd-dashboard.rtl-di.nl"
-#       http {
-#         path {
-#           backend {
-#             service_name = local.linkerd_web_name
-#             service_port = "8084"
-#           }
-#         }
-#       }
-#     }
-#   }
-# }
+resource "kubernetes_ingress" "linkerd_dashboard_ingress" {
+  count = enable_web_ingress ? 1 : 0
+  
+  depends_on = [
+    kubernetes_secret.linkerd_dashboard_ingress_auth
+  ]
+
+  metadata {
+    name      = "linkerd-dashboard-ingress"
+    namespace = local.linkerd_namespace
+    annotations = var.web_ingress_annotations
+  }
+  spec {
+    rule {
+      host = var.web_ingress_host
+      http {
+        path {
+          backend {
+            service_name = local.linkerd_web_name
+            service_port = "8084"
+          }
+        }
+      }
+    }
+  }
+}

@@ -9,3 +9,21 @@ variable "high_availability" {
   description = "Enable high availability"
   default     = false
 }
+
+variable "enable_web_ingress" {
+  type        = bool
+  description = "enable the ingress object for the web component"
+  default     = false
+}
+
+variable "web_ingress_annotations" {
+  type        = map(string)
+  description = "eventual ingress annotations for the ingress-controller"
+  default     = {}
+}
+
+variable "web_ingress_host" {
+  type        = string
+  description = "host name for the web component"
+  defualt     = ""
+}
