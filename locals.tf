@@ -1,6 +1,7 @@
 locals {
     # certificates
     trustAnchorsPEM = var.external_identity_issuer ? var.trust_anchors_pem_value : file("${path.module}/certs/proxy_trust_anchor.pem")
+    scheme = "kubernetes.io/tls"
 
     # namespaces
     linkerd_namespace = var.namespace_name
