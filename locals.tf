@@ -33,11 +33,11 @@ locals {
 
     # annotations
     linkerd_annotation_created_by = {
-        "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
+        "linkerd.io/created-by" = "linkerd/helm stable-2.8.1"
     }
 
     linkerd_annotations_for_deployment = {
-        "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
+        "linkerd.io/created-by"    = "linkerd/helm stable-2.8.1",
         "linkerd.io/identity-mode" = "default",
         "linkerd.io/proxy-version" = "stable-2.8.1"
     }

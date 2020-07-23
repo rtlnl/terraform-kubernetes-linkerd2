@@ -60,7 +60,7 @@ resource "kubernetes_secret" "linkerd_identity_issuer" {
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
     annotations = {
-      "linkerd.io/created-by"             = "linkerd/cli stable-2.8.1",
+      "linkerd.io/created-by"             = "linkerd/helm stable-2.8.1",
       "linkerd.io/identity-issuer-expiry" = "2021-06-30T08:06:46Z"
     }
   }

@@ -307,7 +307,7 @@ resource "kubernetes_deployment" "linkerd_identity" {
           image_pull_policy = "IfNotPresent"
           security_context {
             run_as_user               = local.linkerd_deployment_proxy_uid
-            read_only_root_filesystem = true
+            # read_only_root_filesystem = true
           }
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }
