@@ -1,6 +1,6 @@
 locals {
     # certificates
-    trustAnchorsPEM = var.external_identity_issuer ? var.trust_anchors_pem_value : "-----BEGIN CERTIFICATE-----\nMIIBlDCCATugAwIBAgIQWFhmTo2sJQpa1ukwttueNjAKBggqhkjOPQQDAjApMScw\nJQYDVQQDEx5pZGVudGl0eS5saW5rZXJkLmNsdXN0ZXIubG9jYWwwHhcNMjAwNzE5\nMTg1OTU4WhcNMzAwNzE3MTg1OTU4WjApMScwJQYDVQQDEx5pZGVudGl0eS5saW5r\nZXJkLmNsdXN0ZXIubG9jYWwwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASpXFna\nnwkiyeSMYAmVUs4CL5x0dIUZ2hugUcIaS36e+51KbEUNdeAOc/avc3zP/kQj/QQd\n5xHFqG3fhWINWn0Yo0UwQzAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgwBgEB\n/wIBATAdBgNVHQ4EFgQUdiUyKIkxmtFgzBce9A5DG9HeiYkwCgYIKoZIzj0EAwID\nRwAwRAIgGwznLFUB55JwwqqKZWIPjSChJdBtcDvNNzfFIKy0dZoCIG9mVk5r+Kk0\nxDUDBkbAmEcyoYM8JIzRd2f2/59ixY7E\n-----END CERTIFICATE-----"
+    trustAnchorsPEM = var.external_identity_issuer ? var.trust_anchors_pem_value : "-----BEGIN CERTIFICATE-----\nMIIBljCCATygAwIBAgIRAJsn/d/2ld+DiggrF6gl5zkwCgYIKoZIzj0EAwIwKTEn\nMCUGA1UEAxMeaWRlbnRpdHkubGlua2VyZC5jbHVzdGVyLmxvY2FsMB4XDTIwMDcy\nMzExMTMzMVoXDTMwMDcyMTExMTMzMVowKTEnMCUGA1UEAxMeaWRlbnRpdHkubGlu\na2VyZC5jbHVzdGVyLmxvY2FsMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEZ6HU\nl9E2Cvg/N41HOXMsHtoryCUy5UFt418CWeEfrl9m80NpQtFUPG5VBVYdzu+woPFG\nJ2keOBb5L1G2NukQDqNFMEMwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYB\nAf8CAQEwHQYDVR0OBBYEFLlwO9syq+PVmE+461qrBEr9rMa2MAoGCCqGSM49BAMC\nA0gAMEUCIA2bQYbgDs2ugEnJLZIeRwcmQELPykUgnpxbu7VZK1F5AiEAtdKt+AB9\nybrKt1cn1BXeVTgf/8/fJtYJDh5gOu20IAo=\n-----END CERTIFICATE-----"
 
     # namespaces
     linkerd_namespace = var.namespace_name
@@ -128,7 +128,8 @@ locals {
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = indent(4, local.trustAnchorsPEM)
+            # value = indent(4, local.trustAnchorsPEM)
+            value = local.trustAnchorsPEM  
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"
