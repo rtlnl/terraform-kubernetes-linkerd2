@@ -22,6 +22,11 @@ resource "kubernetes_cluster_role" "linkerd_identity" {
     api_groups = [""]
     resources  = ["events"]
   }
+  rule {
+    verbs      = ["get"]
+    api_groups = [""]
+    resources  = ["secrets"]
+  }
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_identity" {
