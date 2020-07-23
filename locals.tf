@@ -128,7 +128,7 @@ locals {
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = file("${path.module}/certs/proxy_trust_anchor.pem")
+            value = "${local.trustAnchorsPEM}"
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"
