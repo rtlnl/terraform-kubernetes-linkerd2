@@ -19,7 +19,7 @@ data "template_file" "trust_anchor" {
   template = file("${path.module}/configs/global")
 
   vars = {
-    trustAnchorsPEM = local.trustAnchorsPEM
+    trustAnchorsPEM = trimspace(replace(local.trustAnchorsPEM, "\n", "\\n"))
   }
 }
 
