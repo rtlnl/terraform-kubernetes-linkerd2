@@ -15,6 +15,14 @@ resource "kubernetes_namespace" "linkerd" {
   }
 }
 
+data "template_file" "trust_anchor" {
+  template = file("${path.module}/configs/global")
+
+  vars = {
+    trustAnchorsPEM = local.trustAnchorsPEM
+  }
+}
+
 resource "kubernetes_config_map" "linkerd_config" {
   depends_on = [
     kubernetes_namespace.linkerd[0]
@@ -30,7 +38,7 @@ resource "kubernetes_config_map" "linkerd_config" {
     annotations = local.linkerd_annotation_created_by
   }
   data = {
-    # global  = file("${path.module}/configs/global")
+    global  = data.template_file.prometheus.rendered
     install = file("${path.module}/configs/install")
     proxy   = file("${path.module}/configs/proxy")
   }

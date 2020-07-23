@@ -34,6 +34,12 @@ variable "external_identity_issuer" {
   default     = false  
 }
 
+variable "trust_anchors_pem_value" {
+  type        = string
+  description = "PEM value used as trust anchors"
+  default     = ""
+}
+
 variable "enable_web_ingress" {
   type        = bool
   description = "enable the ingress object for the web component"
