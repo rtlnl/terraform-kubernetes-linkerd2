@@ -140,7 +140,7 @@ locals {
         },
         {
             name  = "_l5d_trustdomain"
-            value = "${local.linkerd_trust_domain}"
+            value = "${trimspace(local.linkerd_trust_domain})"
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_LOCAL_NAME"
