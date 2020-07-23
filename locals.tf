@@ -128,7 +128,7 @@ locals {
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = "${replace(local.trustAnchorsPEM, "\n", "")}"
+            value = "${indent(4, local.trustAnchorsPEM)}"
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"
