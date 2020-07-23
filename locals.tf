@@ -104,11 +104,11 @@ locals {
         },
         {
             name  = "LINKERD2_PROXY_DESTINATION_GET_SUFFIXES"
-            value = "svc.${local.linkerd_namespace}."
+            value = "svc.${local.linkerd_trust_domain}."
         },
         {
             name  = "LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES"
-            value = "svc.${local.linkerd_namespace}."
+            value = "svc.${local.linkerd_trust_domain}."
         },
         {
             name  = "LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE"
