@@ -15,11 +15,20 @@ resource "kubernetes_namespace" "linkerd" {
   }
 }
 
+module "trust_anchors_pem" {
+  source    = "github.com/gearnode/terraform-kubernetes-get-secret?ref=v0.3.0"
+
+  namespace = "linkerd"
+  name      = "linkerd-identity-issuer"
+  key       = "ca.crt"
+  context   = "arn:aws:eks:eu-west-1:451291743503:cluster/di-gateway-cluster"
+}
+
 data "template_file" "trust_anchor" {
   template = file("${path.module}/configs/global")
 
   vars = {
-    trustAnchorsPEM = local.trustAnchorsPEM
+    trustAnchorsPEM = module.trust_anchors_pem.result
   }
 }
 
