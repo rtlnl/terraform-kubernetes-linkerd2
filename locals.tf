@@ -128,7 +128,7 @@ locals {
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = "${local.trustAnchorsPEM}"
+            value = "${replace(local.trustAnchorsPEM, "\n", "")}"
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"
@@ -140,7 +140,7 @@ locals {
         },
         {
             name  = "_l5d_trustdomain"
-            value = "${trimspace(replace(local.linkerd_trust_domain, "\n", ""))}"
+            value = "${local.linkerd_trust_domain}"
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_LOCAL_NAME"
