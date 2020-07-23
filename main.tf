@@ -30,7 +30,7 @@ resource "kubernetes_config_map" "linkerd_config" {
     annotations = local.linkerd_annotation_created_by
   }
   data = {
-    global  = file("${path.module}/configs/global")
+    # global  = file("${path.module}/configs/global")
     install = file("${path.module}/configs/install")
     proxy   = file("${path.module}/configs/proxy")
   }
