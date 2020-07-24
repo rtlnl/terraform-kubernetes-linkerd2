@@ -1,5 +1,5 @@
 resource "kubernetes_role" "linkerd_web" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = local.linkerd_web_name
@@ -32,7 +32,7 @@ resource "kubernetes_role" "linkerd_web" {
 }
 
 resource "kubernetes_role_binding" "linkerd_web" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = local.linkerd_web_name
@@ -54,7 +54,7 @@ resource "kubernetes_role_binding" "linkerd_web" {
 }
 
 resource "kubernetes_cluster_role" "linkerd_web_check" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-web-check"
@@ -95,7 +95,7 @@ resource "kubernetes_cluster_role" "linkerd_web_check" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_web_check" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-web-check"
@@ -116,7 +116,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_web_check" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_linkerd_web_admin" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-web-admin"
@@ -148,7 +148,7 @@ resource "kubernetes_service_account" "linkerd_web" {
 
 resource "kubernetes_service" "linkerd_web" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_role.linkerd_web,
     kubernetes_role_binding.linkerd_web,
     kubernetes_cluster_role.linkerd_web_check,
@@ -185,7 +185,9 @@ resource "kubernetes_service" "linkerd_web" {
 
 resource "kubernetes_deployment" "linkerd_web" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
     kubernetes_role.linkerd_web,
     kubernetes_role_binding.linkerd_web,
     kubernetes_cluster_role.linkerd_web_check,
@@ -209,7 +211,7 @@ resource "kubernetes_deployment" "linkerd_web" {
     annotations = local.linkerd_annotation_created_by
   }
   spec {
-    replicas = 1
+    replicas = var.web_replicas
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
         "linkerd.io/control-plane-component" = local.linkerd_component_web_name,
@@ -410,43 +412,25 @@ resource "kubernetes_deployment" "linkerd_web" {
   }
 }
 
-# resource "kubernetes_secret" "linkerd_dashboard_ingress_auth" {
-#   metadata {
-#     name      = "linkerd-dashboard-ingress-auth"
-#     namespace = local.linkerd_namespace
-#   }
-#   data = {
-#     auth = "admin:$apr1$n7Cu6gHl$E47ogf7CO8NRYjEjBOkWM.\n\n"
-#   }
-#   type = "Opaque"
-# }
+resource "kubernetes_ingress" "linkerd_dashboard_ingress" {
+  count = var.enable_web_ingress ? 1 : 0
 
-# resource "kubernetes_ingress" "linkerd_dashboard_ingress" {
-#   metadata {
-#     name      = "linkerd-dashboard-ingress"
-#     namespace = local.linkerd_namespace
-#     annotations = {
-#       "kubernetes.io/ingress.class"                       = "nginx"
-#       "nginx.ingress.kubernetes.io/auth-realm"            = "Authentication Required"
-#       "nginx.ingress.kubernetes.io/auth-secret"           = "linkerd-dashboard-ingress-auth"
-#       "nginx.ingress.kubernetes.io/auth-type"             = "basic"
-#       "nginx.ingress.kubernetes.io/configuration-snippet" = "proxy_set_header Origin \"\";\nproxy_hide_header l5d-remote-ip;\nproxy_hide_header l5d-server-id; \n"
-#       "nginx.ingress.kubernetes.io/ssl-passthrough"       = "true"
-#       "nginx.ingress.kubernetes.io/ssl-redirect"          = "false"
-#       "nginx.ingress.kubernetes.io/upstream-vhost"        = "$service_name.$namespace.svc.cluster.local:8084"
-#     }
-#   }
-#   spec {
-#     rule {
-#       host = "linkerd-dashboard.rtl-di.nl"
-#       http {
-#         path {
-#           backend {
-#             service_name = local.linkerd_web_name
-#             service_port = "8084"
-#           }
-#         }
-#       }
-#     }
-#   }
-# }
+  metadata {
+    name      = "linkerd-dashboard-ingress"
+    namespace = local.linkerd_namespace
+    annotations = var.web_ingress_annotations
+  }
+  spec {
+    rule {
+      host = var.web_ingress_host
+      http {
+        path {
+          backend {
+            service_name = local.linkerd_web_name
+            service_port = "8084"
+          }
+        }
+      }
+    }
+  }
+}

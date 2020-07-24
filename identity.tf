@@ -1,5 +1,5 @@
 resource "kubernetes_cluster_role" "linkerd_identity" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-identity"
@@ -25,7 +25,7 @@ resource "kubernetes_cluster_role" "linkerd_identity" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_identity" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-identity"
@@ -46,7 +46,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_identity" {
 }
 
 resource "kubernetes_service_account" "linkerd_identity" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = local.linkerd_identity_name
@@ -59,7 +59,7 @@ resource "kubernetes_service_account" "linkerd_identity" {
 
 resource "kubernetes_service" "linkerd_identity" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_cluster_role.linkerd_identity,
     kubernetes_cluster_role_binding.linkerd_identity,
     kubernetes_service_account.linkerd_identity
@@ -89,7 +89,10 @@ resource "kubernetes_service" "linkerd_identity" {
 resource "kubernetes_deployment" "linkerd_identity" {
 
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
+    kubernetes_secret.linkerd_identity_issuer,
     kubernetes_cluster_role.linkerd_identity,
     kubernetes_cluster_role_binding.linkerd_identity,
     kubernetes_service_account.linkerd_identity
@@ -109,7 +112,7 @@ resource "kubernetes_deployment" "linkerd_identity" {
     annotations = local.linkerd_annotation_created_by
   }
   spec {
-    replicas = 1
+    replicas = local.controlplane_replicas
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
         "linkerd.io/control-plane-component" = local.linkerd_component_identity_name,
@@ -304,7 +307,7 @@ resource "kubernetes_deployment" "linkerd_identity" {
           image_pull_policy = "IfNotPresent"
           security_context {
             run_as_user               = local.linkerd_deployment_proxy_uid
-            read_only_root_filesystem = true
+            # read_only_root_filesystem = true
           }
         }
         node_selector        = { "beta.kubernetes.io/os" = "linux" }

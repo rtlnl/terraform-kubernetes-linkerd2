@@ -1,25 +1,3 @@
-resource "tls_private_key" "linkerd_trust_anchor" {
-  algorithm   = "ECDSA"
-  ecdsa_curve = "P384"
-}
-
-resource "tls_self_signed_cert" "linkerd_trust_anchor" {
-  subject {
-    common_name = "identity.linkerd.cluster.local"
-  }
-
-  // 5 years
-  validity_period_hours = 43800
-  key_algorithm         = tls_private_key.linkerd_trust_anchor.algorithm
-  is_ca_certificate     = true
-  allowed_uses          = [
-    "cert_signing",
-    "crl_signing",
-  ]
-
-  private_key_pem = tls_private_key.linkerd_trust_anchor.private_key_pem
-}
-
 resource "kubernetes_secret" "linkerd_proxy_injector_tls" {
   metadata {
     name      = "linkerd-proxy-injector-tls"
@@ -72,6 +50,8 @@ resource "kubernetes_secret" "linkerd_tap_tls" {
 }
 
 resource "kubernetes_secret" "linkerd_identity_issuer" {
+  count = var.external_identity_issuer ? 0 : 1 
+
   metadata {
     name      = "linkerd-identity-issuer"
     namespace = local.linkerd_namespace
@@ -80,7 +60,7 @@ resource "kubernetes_secret" "linkerd_identity_issuer" {
       "linkerd.io/control-plane-ns"        = "linkerd"
     }
     annotations = {
-      "linkerd.io/created-by"             = "linkerd/cli stable-2.8.1",
+      "linkerd.io/created-by"             = "linkerd/helm stable-2.8.1",
       "linkerd.io/identity-issuer-expiry" = "2021-06-30T08:06:46Z"
     }
   }

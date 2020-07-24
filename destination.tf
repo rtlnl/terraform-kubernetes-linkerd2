@@ -1,5 +1,5 @@
 resource "kubernetes_cluster_role" "linkerd_destination" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-destination"
@@ -35,7 +35,7 @@ resource "kubernetes_cluster_role" "linkerd_destination" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_destination" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-destination"
@@ -56,7 +56,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_destination" {
 }
 
 resource "kubernetes_service_account" "linkerd_destination" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = local.linkerd_destination_name
@@ -97,7 +97,9 @@ resource "kubernetes_service" "linkerd_dst" {
 
 resource "kubernetes_deployment" "linkerd_destination" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
     kubernetes_cluster_role.linkerd_destination,
     kubernetes_cluster_role_binding.linkerd_destination,
     kubernetes_service_account.linkerd_destination,
@@ -118,7 +120,7 @@ resource "kubernetes_deployment" "linkerd_destination" {
     annotations = local.linkerd_annotation_created_by
   }
   spec {
-    replicas = 1
+    replicas = local.controlplane_replicas
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
         "linkerd.io/control-plane-component" = local.linkerd_component_destination_name,

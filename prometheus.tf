@@ -1,5 +1,5 @@
 resource "kubernetes_cluster_role" "linkerd_prometheus" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-prometheus"
@@ -15,7 +15,7 @@ resource "kubernetes_cluster_role" "linkerd_prometheus" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_prometheus" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-prometheus"
@@ -36,7 +36,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_prometheus" {
 }
 
 resource "kubernetes_service_account" "linkerd_prometheus" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
   
   metadata {
     name      = local.linkerd_prometheus_name
@@ -49,7 +49,7 @@ resource "kubernetes_service_account" "linkerd_prometheus" {
 
 resource "kubernetes_config_map" "linkerd_prometheus_config" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_cluster_role.linkerd_prometheus,
     kubernetes_cluster_role_binding.linkerd_prometheus,
     kubernetes_service_account.linkerd_prometheus
@@ -70,7 +70,7 @@ resource "kubernetes_config_map" "linkerd_prometheus_config" {
 
 resource "kubernetes_service" "linkerd_prometheus" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_config_map.linkerd_prometheus_config,
     kubernetes_cluster_role.linkerd_prometheus,
     kubernetes_cluster_role_binding.linkerd_prometheus,
@@ -100,7 +100,9 @@ resource "kubernetes_service" "linkerd_prometheus" {
 
 resource "kubernetes_deployment" "linkerd_prometheus" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
     kubernetes_config_map.linkerd_prometheus_config,
     kubernetes_cluster_role.linkerd_prometheus,
     kubernetes_cluster_role_binding.linkerd_prometheus,
@@ -122,7 +124,7 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
     annotations = local.linkerd_annotation_created_by
   }
   spec {
-    replicas = 1
+    replicas = var.prometheus_replicas
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
         "linkerd.io/control-plane-component" = local.linkerd_component_prometheus_name,

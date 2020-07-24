@@ -1,6 +1,10 @@
 locals {
+    # certificates
+    trustAnchorsPEM = var.external_identity_issuer ? var.trust_anchors_pem_value : file("${path.module}/certs/proxy_trust_anchor.pem")
+    scheme = "kubernetes.io/tls"
+
     # namespaces
-    linkerd_namespace = "linkerd"
+    linkerd_namespace = var.namespace_name
 
     # component names
     linkerd_component_controller_name = "controller"
@@ -28,13 +32,16 @@ locals {
     linkerd_tap_name = "linkerd-tap"
     linkerd_web_name = "linkerd-web"
 
+    # replicas
+    controlplane_replicas = var.high_availability ? var.controlplane_ha_replicas : 1
+
     # annotations
     linkerd_annotation_created_by = {
-        "linkerd.io/created-by" = "linkerd/cli stable-2.8.1"
+        "linkerd.io/created-by" = "linkerd/helm stable-2.8.1"
     }
 
     linkerd_annotations_for_deployment = {
-        "linkerd.io/created-by"    = "linkerd/cli stable-2.8.1",
+        "linkerd.io/created-by"    = "linkerd/helm stable-2.8.1",
         "linkerd.io/identity-mode" = "default",
         "linkerd.io/proxy-version" = "stable-2.8.1"
     }
@@ -73,6 +80,7 @@ locals {
     linkerd_deployment_outbound_port = 433
 
     # deployment env variables
+    linkerd_trust_domain = var.trust_domain
     linkerd_deployment_container_env_variables = [
         {
             name  = "LINKERD2_PROXY_LOG"
@@ -100,11 +108,11 @@ locals {
         },
         {
             name  = "LINKERD2_PROXY_DESTINATION_GET_SUFFIXES"
-            value = "svc.cluster.local."
+            value = "svc.${local.linkerd_trust_domain}."
         },
         {
             name  = "LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES"
-            value = "svc.cluster.local."
+            value = "svc.${local.linkerd_trust_domain}."
         },
         {
             name  = "LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE"
@@ -124,7 +132,7 @@ locals {
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
-            value = file("${path.module}/certs/proxy_trust_anchor.pem")
+            value = local.trustAnchorsPEM  
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_TOKEN_FILE"
@@ -132,11 +140,11 @@ locals {
         },
         {
             name  = "_l5d_ns"
-            value = "linkerd"
+            value = "${local.linkerd_namespace}"
         },
         {
             name  = "_l5d_trustdomain"
-            value = "cluster.local"
+            value = "${local.linkerd_trust_domain}"
         },
         {
             name  = "LINKERD2_PROXY_IDENTITY_LOCAL_NAME"
@@ -156,8 +164,8 @@ locals {
         }
     ]
 
-    linkerd_proxy_destination_svc_addr = "linkerd-dst.linkerd.svc.cluster.local:8086"
-    linkerd_proxy_identity_svc_addr = "linkerd-identity.linkerd.svc.cluster.local:8080"
+    linkerd_proxy_destination_svc_addr = "linkerd-dst.linkerd.svc.${local.linkerd_trust_domain}:8086"
+    linkerd_proxy_identity_svc_addr = "linkerd-identity.linkerd.svc.${local.linkerd_trust_domain}:8080"
 
     #log level
     linkerd_container_log_level = "debug" # TODO: change level to info before deploying to prod

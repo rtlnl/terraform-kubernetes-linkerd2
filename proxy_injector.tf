@@ -1,5 +1,5 @@
 resource "kubernetes_cluster_role" "linkerd_proxy_injector" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-proxy-injector"
@@ -35,7 +35,7 @@ resource "kubernetes_cluster_role" "linkerd_proxy_injector" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_proxy_injector" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-proxy-injector"
@@ -56,7 +56,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_proxy_injector" {
 }
 
 resource "kubernetes_service_account" "linkerd_proxy_injector" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = local.linkerd_proxy_injector_name
@@ -69,7 +69,7 @@ resource "kubernetes_service_account" "linkerd_proxy_injector" {
 
 resource "kubernetes_service" "linkerd_proxy_injector" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_cluster_role.linkerd_proxy_injector,
     kubernetes_cluster_role_binding.linkerd_proxy_injector,
     kubernetes_service_account.linkerd_proxy_injector
@@ -98,7 +98,10 @@ resource "kubernetes_service" "linkerd_proxy_injector" {
 
 resource "kubernetes_deployment" "linkerd_proxy_injector" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
+    kubernetes_secret.linkerd_proxy_injector_tls,
     kubernetes_cluster_role.linkerd_proxy_injector,
     kubernetes_cluster_role_binding.linkerd_proxy_injector,
     kubernetes_service_account.linkerd_proxy_injector,
@@ -119,7 +122,7 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
     annotations = local.linkerd_annotation_created_by
   }
   spec {
-    replicas = 1
+    replicas = local.controlplane_replicas
     selector {
       match_labels = {
         "linkerd.io/control-plane-component" = local.linkerd_component_proxy_injector_name

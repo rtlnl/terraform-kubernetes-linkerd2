@@ -1,6 +1,10 @@
 resource "kubernetes_namespace" "linkerd" {
+  count = var.create_namespace ? 1 : 0
+  
+  depends_on = [var.module_depends_on]
+
   metadata {
-    name = "linkerd"
+    name = var.namespace_name
     labels = merge(local.linkerd_label_control_plane_ns, {
       "config.linkerd.io/admission-webhooks" = "disabled",
       "linkerd.io/is-control-plane"          = "true"
@@ -11,8 +15,19 @@ resource "kubernetes_namespace" "linkerd" {
   }
 }
 
+data "template_file" "trust_anchor" {
+  template = file("${path.module}/configs/global")
+
+  vars = {
+    scheme          = local.scheme
+    trustAnchorsPEM = trimspace(replace(local.trustAnchorsPEM, "\n", "\\n"))
+  }
+}
+
 resource "kubernetes_config_map" "linkerd_config" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [
+    kubernetes_namespace.linkerd[0]
+  ]
 
   metadata {
     name      = "linkerd-config"
@@ -24,14 +39,14 @@ resource "kubernetes_config_map" "linkerd_config" {
     annotations = local.linkerd_annotation_created_by
   }
   data = {
-    global  = file("${path.module}/configs/global")
+    global  = trimspace(data.template_file.trust_anchor.rendered)
     install = file("${path.module}/configs/install")
     proxy   = file("${path.module}/configs/proxy")
   }
 }
 
 resource "kubernetes_config_map" "linkerd_config_addons" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = "linkerd-config-addons"

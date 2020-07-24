@@ -1,5 +1,5 @@
 resource "kubernetes_cluster_role" "linkerd_linkerd_tap" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-tap"
@@ -25,7 +25,7 @@ resource "kubernetes_cluster_role" "linkerd_linkerd_tap" {
 }
 
 resource "kubernetes_cluster_role" "linkerd_linkerd_tap_admin" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-tap-admin"
@@ -41,7 +41,7 @@ resource "kubernetes_cluster_role" "linkerd_linkerd_tap_admin" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-tap"
@@ -62,7 +62,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap" {
 }
 
 resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap_auth_delegator" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name = "linkerd-linkerd-tap-auth-delegator"
@@ -83,7 +83,7 @@ resource "kubernetes_cluster_role_binding" "linkerd_linkerd_tap_auth_delegator" 
 }
 
 resource "kubernetes_service_account" "linkerd_tap" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = local.linkerd_tap_name
@@ -95,7 +95,7 @@ resource "kubernetes_service_account" "linkerd_tap" {
 }
 
 resource "kubernetes_role_binding" "linkerd_linkerd_tap_auth_reader" {
-  depends_on = [kubernetes_namespace.linkerd]
+  depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
     name      = "linkerd-linkerd-tap-auth-reader"
@@ -118,7 +118,7 @@ resource "kubernetes_role_binding" "linkerd_linkerd_tap_auth_reader" {
 
 resource "kubernetes_api_service" "v1alpha1_tap_linkerd_io" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_cluster_role.linkerd_linkerd_tap,
     kubernetes_cluster_role.linkerd_linkerd_tap_admin,
     kubernetes_cluster_role_binding.linkerd_linkerd_tap,
@@ -148,7 +148,7 @@ resource "kubernetes_api_service" "v1alpha1_tap_linkerd_io" {
 
 resource "kubernetes_service" "linkerd_tap" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
     kubernetes_cluster_role.linkerd_linkerd_tap,
     kubernetes_cluster_role.linkerd_linkerd_tap_admin,
     kubernetes_cluster_role_binding.linkerd_linkerd_tap,
@@ -186,7 +186,10 @@ resource "kubernetes_service" "linkerd_tap" {
 
 resource "kubernetes_deployment" "linkerd_tap" {
   depends_on = [
-    kubernetes_namespace.linkerd,
+    kubernetes_namespace.linkerd[0],
+    kubernetes_config_map.linkerd_config,
+    kubernetes_config_map.linkerd_config_addons,
+    kubernetes_secret.linkerd_tap_tls,
     kubernetes_cluster_role.linkerd_linkerd_tap,
     kubernetes_cluster_role.linkerd_linkerd_tap_admin,
     kubernetes_cluster_role_binding.linkerd_linkerd_tap,
@@ -211,7 +214,7 @@ resource "kubernetes_deployment" "linkerd_tap" {
     annotations = local.linkerd_annotation_created_by
   }
   spec {
-    replicas = 1
+    replicas = local.controlplane_replicas
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
         "linkerd.io/control-plane-component" = local.linkerd_component_tap_name,

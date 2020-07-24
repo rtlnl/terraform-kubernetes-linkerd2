@@ -1,0 +1,28 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: linkerd-proxy-injector-webhook-config
+  labels:
+    linkerd.io/control-plane-component: proxy-injector
+    linkerd.io/control-plane-ns: linkerd
+webhooks:
+- name: linkerd-proxy-injector.linkerd.io
+  namespaceSelector:
+    matchExpressions:
+    - key: config.linkerd.io/admission-webhooks
+      operator: NotIn
+      values:
+      - disabled
+  clientConfig:
+    service:
+      name: linkerd-proxy-injector
+      namespace: linkerd
+      path: "/"
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURKekNDQWcrZ0F3SUJBZ0lSQUtySXBGN1JEWXVUaFQzbnRCL1dNQmN3RFFZSktvWklodmNOQVFFTEJRQXcKTFRFck1Da0dBMVVFQXhNaWJHbHVhMlZ5WkMxd2NtOTRlUzFwYm1wbFkzUnZjaTVzYVc1clpYSmtMbk4yWXpBZQpGdzB5TURBM01qTXhNVFExTlRGYUZ3MHlNVEEzTWpNeE1UUTFOVEZhTUMweEt6QXBCZ05WQkFNVElteHBibXRsCmNtUXRjSEp2ZUhrdGFXNXFaV04wYjNJdWJHbHVhMlZ5WkM1emRtTXdnZ0VpTUEwR0NTcUdTSWIzRFFFQkFRVUEKQTRJQkR3QXdnZ0VLQW9JQkFRRGFWZG9BT2tiOURYQlVMZnh0Zlc1UUxYQ2E3SDc3SlhrR09xT09Ka2NRL0ovQQplaEY3Q1Vtd1huWVVMOTl3VUpTRm95a3A1TGk1RHVoOGNBRmlJQno1MW5ia283c1JnNVhNRHcrQXAwMS9yRWkvCmwyN0ZqSXEyS3BDeW9EZFNvSXJuUmRYd1ZQNVpPYnFZK1g3YVJYVnlrcndVV1BURFU3U01lcWlDdDJ2VTRLcnoKazRBSWVZb0VhK2tEbHk4TzNXWUpQUHF4SXJPY2xiZWxGaFdiRE1lY1ZJVjVydXFzcVZOcVcxbCtCeVV3K3lwVgp6REc0QTQyYStlbFVjM05aZjJXb0sveFNmN0JRNjg2MW0wU0FjeFdYQjlQbEtsODN0NWZvWHJlditnTGhRbEtWClNnS3hsQlFxTlQ0TEFsQUh6RlZrRk9GTy9QbG53dm1DVHJZaXJkeURBZ01CQUFHalFqQkFNQTRHQTFVZER3RUIKL3dRRUF3SUNwREFkQmdOVkhTVUVGakFVQmdnckJnRUZCUWNEQVFZSUt3WUJCUVVIQXdJd0R3WURWUjBUQVFILwpCQVV3QXdFQi96QU5CZ2txaGtpRzl3MEJBUXNGQUFPQ0FRRUFxcUUyY2NUQWVLZkliTmZLa01VdVpVTFlyeGg3ClNtYnVuUDRFZmY5bjhoS0g0Nnc5QmVIKzJadDR4VVZYOTVhSGJLVFM0YW96TnptL29JNUtmbWRaaWd2MTM5Y2kKejhkNWZUcm1NZVRjaFhrdlNFRlJoc1hEUWFIK2VnUWtra0hEM3c1Sy9RTzNqYkhXZDhYSFp4cU0rR053QWZSUQoxcEJ0bThnZDRpNUxtMDRtNU94Y0g4MzNwM3FzQjVJbGVUQ3pZUUN6UmNnV0FSNGhRWnIwakNPN1p3V0s4emMzCnR3bVc5N0tjNjBxSFluTjFLWC9OMCtCaDNpanJ4cEhERlVrSDN5cVFCOGUxckN6Ni9FTGtVT2E1MitSY2dEVjYKb3lyamhhbVZ4akdNZUhqQUNwZ2VWdzJPbzVyYUlzeTdyb2QxVDVsZnRKSFByOVRneHhtdjVDZ0NRZz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  failurePolicy: Ignore
+  rules:
+  - operations: [ "CREATE" ]
+    apiGroups: [""]
+    apiVersions: ["v1"]
+    resources: ["pods"]
+  sideEffects: None
