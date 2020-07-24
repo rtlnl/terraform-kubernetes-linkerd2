@@ -112,7 +112,7 @@ resource "kubernetes_deployment" "linkerd_identity" {
     annotations = local.linkerd_annotation_created_by
   }
   spec {
-    replicas = 1
+    replicas = local.controlplane_replicas
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
         "linkerd.io/control-plane-component" = local.linkerd_component_identity_name,

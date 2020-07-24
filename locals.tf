@@ -32,6 +32,9 @@ locals {
     linkerd_tap_name = "linkerd-tap"
     linkerd_web_name = "linkerd-web"
 
+    # replicas
+    controlplane_replicas = var.high_availability ? var.controlplane_ha_replicas : 1
+
     # annotations
     linkerd_annotation_created_by = {
         "linkerd.io/created-by" = "linkerd/helm stable-2.8.1"

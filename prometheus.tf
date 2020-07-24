@@ -124,7 +124,7 @@ resource "kubernetes_deployment" "linkerd_prometheus" {
     annotations = local.linkerd_annotation_created_by
   }
   spec {
-    replicas = 1
+    replicas = var.prometheus_replicas
     selector {
       match_labels = merge(local.linkerd_label_control_plane_ns, {
         "linkerd.io/control-plane-component" = local.linkerd_component_prometheus_name,

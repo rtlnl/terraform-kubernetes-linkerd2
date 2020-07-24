@@ -122,7 +122,7 @@ resource "kubernetes_deployment" "linkerd_proxy_injector" {
     annotations = local.linkerd_annotation_created_by
   }
   spec {
-    replicas = 1
+    replicas = local.controlplane_replicas
     selector {
       match_labels = {
         "linkerd.io/control-plane-component" = local.linkerd_component_proxy_injector_name
