@@ -1,6 +1,8 @@
 # Linkerd2 Terraform Module (WIP)
 
-Terraform module to deploy Linkerd2 on Kubernetes
+Terraform module to deploy Linkerd2 on Kubernetes. This modules uses the Terraform Kubernetes provider instead of running the Helm provider.
+
+We ❤️ contributions! Open a PR if you find a bug or you'd like to have a specific feature :rocket:
 
 ## Features 
 
@@ -10,7 +12,6 @@ The module supports the following features:
 - High Availability
 - Automatic rotation of TLS controlplane credentials as explained [here](https://linkerd.io/2/tasks/automatically-rotating-control-plane-tls-credentials/)
 - Creation of Web Ingress object for exposing the dashboard
-- Prometheus and Grafana installation
 
 ## Roadmap
 
