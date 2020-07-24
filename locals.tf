@@ -1,10 +1,10 @@
 locals {
   # certificates
   trustAnchorsPEM = var.external_identity_issuer ? var.trust_anchors_pem_value : file("${path.module}/certs/proxy_trust_anchor.pem")
-  scheme          = "kubernetes.io/tls"
+  scheme          = var.external_identity_issuer ? "kubernetes.io/tls" : "linkerd.io/tls"
 
   validating_webhook_ca_bundle = var.sp_validator_pem == "" ? file("${path.module}/certs/sp_validator_crt.pem") : var.sp_validator_pem
-  mutating_webhook_ca_bundle = var.proxy_injector_pem == "" ? file("${path.module}/certs/proxy_injector_crt.pem") : var.proxy_injector_pem
+  mutating_webhook_ca_bundle   = var.proxy_injector_pem == "" ? file("${path.module}/certs/proxy_injector_crt.pem") : var.proxy_injector_pem
 
   # namespaces
   linkerd_namespace = var.namespace_name

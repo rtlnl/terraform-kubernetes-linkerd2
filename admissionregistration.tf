@@ -14,6 +14,7 @@ resource "kubernetes_validating_webhook_configuration" "linkerd_sp_validator" {
         values   = ["disabled"]
       }
     }
+    admission_review_versions = ["v1", "v1beta1"]
     client_config {
       service {
         name      = local.linkerd_sp_validator_name
@@ -49,6 +50,7 @@ resource "kubernetes_mutating_webhook_configuration" "linkerd_proxy_injector" {
         values   = ["disabled"]
       }
     }
+    admission_review_versions = ["v1", "v1beta1"]
     client_config {
       service {
         name      = local.linkerd_proxy_injector_name
