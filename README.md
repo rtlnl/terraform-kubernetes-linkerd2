@@ -51,6 +51,10 @@ Don't worry if some pods restart. It's normal since terraform takes a little bit
 
 There is a boolean variable `high_availability` that needs to be set, to switch on high availability in the cluster, this controls when to apply various pod/node affinities defined in the linkerd deployments.
 
+## Certificates
+
+There are some pre-made certificates in the module. This is necessary to make it work locally. We **highly discourage** you to use these in production as they are publicly available. In the `example` folder, we have a small example on how to combine `cert-manager` with `your-own-trustanchors.pem` files to enable the automatic rotation of the controlplane certificates.
+
 ## Requirements
 
 | Name | Version |
