@@ -1,4 +1,4 @@
-# Linkerd2 Terraform Module (WIP)
+# Linkerd2 Terraform Module
 
 Terraform module to deploy Linkerd2 on Kubernetes. This modules uses the Terraform Kubernetes provider instead of running the Helm provider.
 
