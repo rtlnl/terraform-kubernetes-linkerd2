@@ -34,10 +34,22 @@ variable "controlplane_ha_replicas" {
   default     = 3
 }
 
+variable "proxy_injector_pem" {
+  type        = string
+  description = "custom proxy injector pem file. See example file in certs folder on how to pass it as string"
+  default     = ""
+}
+
+variable "sp_validator_pem" {
+  type        = string
+  description = "custom sp validator pem file. See example file in certs folder on how to pass it as string"
+  default     = ""
+}
+
 variable "external_identity_issuer" {
   type        = bool
   description = "Use true in Production! If left to false, it will use the certificates coming with this module. For more information: https://linkerd.io/2/tasks/automatically-rotating-control-plane-tls-credentials/"
-  default     = false  
+  default     = false
 }
 
 variable "trust_anchors_pem_value" {

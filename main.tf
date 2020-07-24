@@ -1,6 +1,6 @@
 resource "kubernetes_namespace" "linkerd" {
   count = var.create_namespace ? 1 : 0
-  
+
   depends_on = [var.module_depends_on]
 
   metadata {
@@ -49,9 +49,9 @@ resource "kubernetes_config_map" "linkerd_config_addons" {
   depends_on = [kubernetes_namespace.linkerd[0]]
 
   metadata {
-    name      = "linkerd-config-addons"
-    namespace = local.linkerd_namespace
-    labels    = local.linkerd_label_control_plane_ns
+    name        = "linkerd-config-addons"
+    namespace   = local.linkerd_namespace
+    labels      = local.linkerd_label_control_plane_ns
     annotations = local.linkerd_annotation_created_by
   }
   data = {
