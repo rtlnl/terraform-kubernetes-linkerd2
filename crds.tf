@@ -14,6 +14,6 @@ resource "null_resource" "crds" {
 
   provisioner "local-exec" {
     when = "destroy"
-    command = "kubectl delete --all crd -n ${local.linkerd_namespace}"
+    command = "kubectl delete -f - <<EOF\n${data.template_file.crds.rendered}\nEOF"
   }
 }
