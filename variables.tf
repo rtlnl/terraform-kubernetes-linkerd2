@@ -10,6 +10,48 @@ variable "namespace_name" {
   default     = "linkerd"
 }
 
+variable "controller_image" {
+  type        = string
+  description = "docker image name for the controller"
+  default     = "gcr.io/linkerd-io/controller"
+}
+
+variable "controller_image_tag" {
+  type        = string
+  description = "docker image tag for the controller"
+  default     = "stable-2.8.1"
+}
+
+variable "proxy_init_image" {
+  type        = string
+  description = "docker image name for the proxy_init"
+  default     = "gcr.io/linkerd-io/proxy-init"
+}
+
+variable "proxy_init_image_tag" {
+  type        = string
+  description = "docker image tag for the proxy_init"
+  default     = "v1.3.3"
+}
+
+variable "proxy_image" {
+  type        = string
+  description = "docker image name for the proxy"
+  default     = "gcr.io/linkerd-io/proxy"
+}
+
+variable "proxy_image_tag" {
+  type        = string
+  description = "docker image tag for the proxy"
+  default     = "stable-2.8.1"
+}
+
+variable "container_log_level" {
+  type        = string
+  description = "container log level"
+  default     = "info"
+}
+
 variable "trust_domain" {
   type        = string
   description = "trust domain for TLS certificates"

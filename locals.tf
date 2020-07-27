@@ -40,33 +40,33 @@ locals {
 
   # annotations
   linkerd_annotation_created_by = {
-    "linkerd.io/created-by" = "linkerd/helm stable-2.8.1"
+    "linkerd.io/created-by" = format("linkerd/helm %s", var.controller_image_tag)
   }
 
   linkerd_annotations_for_deployment = {
-    "linkerd.io/created-by"    = "linkerd/helm stable-2.8.1",
+    "linkerd.io/created-by"    = format("linkerd/helm %s", var.controller_image_tag),
     "linkerd.io/identity-mode" = "default",
-    "linkerd.io/proxy-version" = "stable-2.8.1"
+    "linkerd.io/proxy-version" = var.controller_image_tag
   }
 
   # labels
   linkerd_label_control_plane_ns = {
-    "linkerd.io/control-plane-ns" = "linkerd"
+    "linkerd.io/control-plane-ns" = local.linkerd_namespace
   }
 
   linkerd_label_workload_ns = {
-    "linkerd.io/workload-ns" = "linkerd"
+    "linkerd.io/workload-ns" = local.linkerd_namespace
   }
 
   linkerd_label_partof_version = {
     "app.kubernetes.io/part-of" = "Linkerd",
-    "app.kubernetes.io/version" = "stable-2.8.1"
+    "app.kubernetes.io/version" = var.controller_image_tag
   }
 
   # deployment images
-  linkerd_deployment_proxy_image      = "gcr.io/linkerd-io/proxy:stable-2.8.1"
-  linkerd_deployment_proxy_init_image = "gcr.io/linkerd-io/proxy-init:v1.3.3"
-  linkerd_deployment_controller_image = "gcr.io/linkerd-io/controller:stable-2.8.1"
+  linkerd_deployment_proxy_image      = format("%s:%s", var.proxy_image, var.proxy_image_tag)
+  linkerd_deployment_proxy_init_image = format("%s:%s", var.proxy_init_image, var.proxy_init_image_tag)
+  linkerd_deployment_controller_image = format("%s:%s", var.controller_image, var.controller_image_tag)
 
   # deployment security context
   linkerd_deployment_security_context_user = 2013
@@ -87,7 +87,7 @@ locals {
   linkerd_deployment_container_env_variables = [
     {
       name  = "LINKERD2_PROXY_LOG"
-      value = "warn,linkerd=info"
+      value = format("warn,linkerd=%s", var.container_log_level)
     },
     {
       name  = "LINKERD2_PROXY_DESTINATION_GET_NETWORKS"
@@ -167,9 +167,9 @@ locals {
     }
   ]
 
-  linkerd_proxy_destination_svc_addr = "linkerd-dst.linkerd.svc.${local.linkerd_trust_domain}:8086"
-  linkerd_proxy_identity_svc_addr    = "linkerd-identity.linkerd.svc.${local.linkerd_trust_domain}:8080"
+  linkerd_proxy_destination_svc_addr = "linkerd-dst.${local.linkerd_namespace}.svc.${local.linkerd_trust_domain}:8086"
+  linkerd_proxy_identity_svc_addr    = "linkerd-identity.${local.linkerd_namespace}.svc.${local.linkerd_trust_domain}:8080"
 
   #log level
-  linkerd_container_log_level = "debug" # TODO: change level to info before deploying to prod
+  linkerd_container_log_level = var.container_log_level
 }
