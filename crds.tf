@@ -5,7 +5,7 @@ data "template_file" "crds" {
 resource "null_resource" "crds" {
 
   triggers = {
-    manifest_sha1 = sha1("${data.template_file.crds.rendered}")
+    manifest_sha1 = sha1(data.template_file.crds.rendered)
   }
 
   provisioner "local-exec" {
@@ -13,7 +13,7 @@ resource "null_resource" "crds" {
   }
 
   provisioner "local-exec" {
-    when = "destroy"
-    command = "kubectl delete -f - <<EOF\n${data.template_file.crds.rendered}\nEOF"
+    when    = destroy
+    command = "kubectl delete -f ${path.module}/templates/crds.yaml"
   }
 }

@@ -4,7 +4,7 @@ resource "kubernetes_role" "linkerd_web" {
   metadata {
     name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
-    labels    = merge(local.linkerd_label_control_plane_ns, {
+    labels = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     })
   }
@@ -37,7 +37,7 @@ resource "kubernetes_role_binding" "linkerd_web" {
   metadata {
     name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
-    labels    = merge(local.linkerd_label_control_plane_ns, {
+    labels = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     })
   }
@@ -140,7 +140,7 @@ resource "kubernetes_service_account" "linkerd_web" {
   metadata {
     name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
-    labels    = merge(local.linkerd_label_control_plane_ns, {
+    labels = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     })
   }
@@ -160,7 +160,7 @@ resource "kubernetes_service" "linkerd_web" {
   metadata {
     name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
-    labels    = merge(local.linkerd_label_control_plane_ns, {
+    labels = merge(local.linkerd_label_control_plane_ns, {
       "linkerd.io/control-plane-component" = local.linkerd_component_web_name
     })
     annotations = local.linkerd_annotation_created_by
@@ -200,7 +200,7 @@ resource "kubernetes_deployment" "linkerd_web" {
   metadata {
     name      = local.linkerd_web_name
     namespace = local.linkerd_namespace
-    labels    = merge(
+    labels = merge(
       local.linkerd_label_control_plane_ns,
       local.linkerd_label_partof_version,
       {
@@ -246,18 +246,18 @@ resource "kubernetes_deployment" "linkerd_web" {
         automount_service_account_token = var.automount_service_account_token
         init_container {
           name  = local.linkerd_init_container_name
-          image =  local.linkerd_deployment_proxy_init_image
+          image = local.linkerd_deployment_proxy_init_image
           args = [
             "--incoming-proxy-port",
-            "${local.linkerd_deployment_incoming_proxy_port}",
+            local.linkerd_deployment_incoming_proxy_port,
             "--outgoing-proxy-port",
-            "${local.linkerd_deployment_outgoing_proxy_port}",
+            local.linkerd_deployment_outgoing_proxy_port,
             "--proxy-uid",
-            "${local.linkerd_deployment_proxy_uid}",
+            local.linkerd_deployment_proxy_uid,
             "--inbound-ports-to-ignore",
-            "${local.linkerd_deployment_proxy_control_port},${local.linkerd_deployment_admin_port}",
+            local.linkerd_deployment_proxy_control_port, local.linkerd_deployment_admin_port,
             "--outbound-ports-to-ignore",
-            "${local.linkerd_deployment_outbound_port}"
+            local.linkerd_deployment_outbound_port
           ]
           resources {
             limits {
@@ -359,7 +359,7 @@ resource "kubernetes_deployment" "linkerd_web" {
             for_each = local.linkerd_deployment_container_env_variables
 
             content {
-              name = env.value["name"]
+              name  = env.value["name"]
               value = env.value["value"]
             }
           }
@@ -416,8 +416,8 @@ resource "kubernetes_ingress" "linkerd_dashboard_ingress" {
   count = var.enable_web_ingress ? 1 : 0
 
   metadata {
-    name      = "linkerd-dashboard-ingress"
-    namespace = local.linkerd_namespace
+    name        = "linkerd-dashboard-ingress"
+    namespace   = local.linkerd_namespace
     annotations = var.web_ingress_annotations
   }
   spec {
