@@ -143,11 +143,11 @@ locals {
     },
     {
       name  = "_l5d_ns"
-      value = "${local.linkerd_namespace}"
+      value = local.linkerd_namespace
     },
     {
       name  = "_l5d_trustdomain"
-      value = "${local.linkerd_trust_domain}"
+      value = local.linkerd_trust_domain
     },
     {
       name  = "LINKERD2_PROXY_IDENTITY_LOCAL_NAME"
