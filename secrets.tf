@@ -50,7 +50,7 @@ resource "kubernetes_secret" "linkerd_tap_tls" {
 }
 
 resource "kubernetes_secret" "linkerd_identity_issuer" {
-  count = var.external_identity_issuer ? 0 : 1 
+  count = var.external_identity_issuer ? 0 : 1
 
   metadata {
     name      = "linkerd-identity-issuer"
